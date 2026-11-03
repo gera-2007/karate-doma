@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex,nofollow">
+<title>Карате дома: с сервером (учебная)</title>
+<script async src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#F4F4F2;--card:#FFFFFF;--ink:#101113;--mut:#565B63;--line:#DADCE0;--bd:#80858D;--hl:#FBEBEC;--brand:#C4161F;--brand-ink:#C4161F;--on-brand:#fff;--ok:#2F7D4F;--focus:#E0A82E;--hdr:#141518;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0B0C0E;--card:#141518;--ink:#F5F5F3;--mut:#A4A9B1;--line:#2A2D33;--bd:#6E747D;--hl:#2A1518;--brand:#D9232D;--brand-ink:#FF5A62;--hdr:#0B0C0E;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+#app{max-width:480px;margin:0 auto;padding:0 12px 32px;min-height:100vh}
+header{background:var(--hdr);color:#fff;margin:0 -12px 10px;padding:10px 12px 12px;display:flow-root}
+header small{opacity:.75;display:block}header h1{margin:0;font-size:21px;font-weight:800}
+header button{float:right;min-height:44px;min-width:44px;border:1px solid #ffffffa6;background:transparent;color:#fff;border-radius:10px;font:inherit;padding:0 12px}
+h2{font-size:18px;margin:14px 0 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 8px}
+.mut{color:var(--mut);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn{display:block;width:100%;min-height:44px;border:0;border-radius:12px;background:var(--brand);color:var(--on-brand);font:700 16px system-ui,sans-serif;padding:8px 12px;margin:8px 0 0;cursor:pointer}
+.btn.s{background:transparent;color:var(--ink);border:1px solid var(--bd)}
+.btn:disabled{opacity:.5}
+.btn.s.lnk{color:var(--ink)}
+input,select,textarea{width:100%;min-height:44px;font:16px system-ui,sans-serif;color:var(--ink);background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:6px 12px;margin:4px 0}
+label{font-size:13px;color:var(--mut);display:block;margin-top:6px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.xrow{display:grid;grid-template-columns:1fr 92px 48px;gap:8px;align-items:center}
+.xrow button{min-height:48px;min-width:48px;border:1px solid var(--bd);background:transparent;color:var(--ink);border-radius:12px;font-size:20px}
+.code{font:800 24px ui-monospace,Consolas,monospace;letter-spacing:.12em;text-align:center;padding:8px;background:var(--hl);border-radius:12px;margin:6px 0}
+.err{color:var(--brand-ink);font-weight:600;margin:8px 0}
+.ok{color:var(--ok);font-weight:700}
+.pill{display:inline-block;border:1px solid var(--bd);border-radius:99px;padding:2px 10px;font-size:13px;color:var(--mut)}
+.who{list-style:none;margin:8px 0 0;padding:0}.who li{padding:2px 0;font-size:15px}
+.att{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding:3px 0;border-top:1px solid var(--line)}
+.att button{min-height:44px;min-width:66px;border:1px solid var(--bd);background:transparent;color:var(--ink);border-radius:12px;font:inherit}
+.att button[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+.wd{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.wd button{min-height:44px;border:1px solid var(--bd);background:transparent;color:var(--ink);border-radius:10px;font:inherit;padding:0}.wd button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+#hist{display:flex;flex-wrap:wrap;gap:10px 8px;margin-top:10px}.chip{min-height:44px;border:1px solid var(--bd);background:transparent;color:var(--ink);border-radius:12px;font:inherit;font-size:15px;padding:0 12px}.chip[aria-pressed="true"]{border-color:var(--brand);border-width:2px;font-weight:700}
+.tabs.t3{grid-template-columns:repeat(3,1fr)}
+.arc{display:flex;align-items:center;gap:14px;margin:8px 0}.big{font-size:22px;font-weight:800}
+.ring .rg{stroke:var(--line)}.ring .rv{stroke:var(--ok)}.ring .rt{fill:var(--ink);font:800 19px system-ui,sans-serif}
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.dot{width:18px;height:18px;border-radius:50%;display:inline-block}.dot.y{background:var(--ok)}.dot.n{background:transparent;border:2px solid var(--brand-ink)}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0 2px}.bar i{display:block;height:100%;background:var(--ok)}
+.alist{margin-top:4px}.arow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:16px}.arow:first-child{border-top:0}
+.pill.miss{color:var(--brand-ink);border-color:var(--brand-ink)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 0 8px}.tabs button{min-height:44px;font-size:15px;padding:0;border:1px solid var(--bd);background:transparent;color:var(--ink);border-radius:12px;font:inherit}.tabs button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+.cx:hover,.cx:active,.cx:focus-visible{background:var(--brand);border-color:var(--brand);color:#fff}
+.belt{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.belt b{position:relative;width:38px;height:12px;border-radius:3px;border:1px solid var(--bd);flex:none}
+.belt u{position:absolute;top:0;bottom:0;right:7px;width:3px}
+.rq{margin:6px 0 0}.rs{margin:6px 0}.rh{font-weight:700;font-size:14px}.rs ul{margin:2px 0 0;padding-left:20px;font-size:14px;color:var(--mut)}
+details summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}
+.cw{position:relative;display:inline-block}.cx{position:absolute;top:-8px;right:-8px;width:24px;height:24px;min-width:0;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--mut);font:700 16px/1 system-ui;padding:0;cursor:pointer}.cx::after{content:"";position:absolute;inset:-10px}
+.warn{background:var(--hl);border-radius:12px;padding:10px;margin:8px 0}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink);padding:6px 0;margin:0}.chk input{width:24px;min-height:24px;height:24px;flex:none;margin:2px 0}
+.consent{font-size:13px;color:var(--mut)}
+.vid{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}.vrow{padding:6px 0;border-top:1px dashed var(--line)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6px}.two .btn{margin:6px 0 0}
+a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;text-align:center}
+.hrow{margin:6px 0 0;min-height:44px;font-size:15px}.hrow[aria-pressed="true"]{border-color:var(--brand);border-width:2px}
+.att button.no[aria-pressed="true"]{background:var(--brand);border-color:var(--brand)}
+.pill.done{color:var(--ok);border-color:var(--ok)}
+
+/* Подсветка при наведении и нажатии: все нажимаемые элементы */
+.btn,.chip,.tabs button,.wd button,.att button,header button,.cx,summary,select,input{transition:background-color .12s,border-color .12s,color .12s,filter .12s}
+.btn:not(:disabled):hover{filter:brightness(1.12)}.btn:not(:disabled):active{filter:brightness(.82)}
+.btn.s:not(:disabled):hover,.chip:hover,.tabs button:hover,.wd button:hover,.att button:hover,.hrow:hover{background:var(--hl);border-color:var(--brand)}
+.btn.s:not(:disabled):active,.chip:active,.tabs button:active,.wd button:active,.att button:active{background:var(--brand);border-color:var(--brand);color:#fff}
+header button:hover{background:#ffffff26;border-color:#fff}header button:active{background:#fff;color:#141518}
+.tabs button[aria-pressed="true"]:hover,.wd button[aria-pressed="true"]:hover{filter:brightness(1.12);background:var(--brand)}
+.att button.yes[aria-pressed="true"]:hover{background:var(--ok);filter:brightness(1.12)}
+summary:hover{color:var(--brand-ink)}
+input:hover,select:hover{border-color:var(--brand)}
+.xrow button:hover{background:var(--hl);border-color:var(--brand)}.xrow button:active{background:var(--brand);color:#fff}
+</style></head><body><div id="app"></div>
+<script>
+"use strict";
+/* Учебный клиент «с сервером». Данные берутся только из API (karate-doma-api); демо-приложение (index.html) не затронуто. */
+const LS={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+/* Адрес сервера можно передать в ссылке: live.html?server=https://...trycloudflare.com. Принимаются только адреса trycloudflare.com и свой компьютер, чтобы чужая ссылка не подменила сервер. */
+(()=>{try{const q=new URLSearchParams(location.search).get("server");if(!q)return;const u=new URL(q);const ok=(u.protocol==="https:"&&/^[a-z0-9-]+(\.[a-z0-9-]+)*\.trycloudflare\.com$/.test(u.hostname))||(u.protocol==="http:"&&(u.hostname==="127.0.0.1"||u.hostname==="localhost"));if(!ok)return;if(LS.get("kdl_server","")!==u.origin){LS.set("kdl_server",u.origin);LS.del("kdl_token")}}catch(e){}})();
+const st={server:LS.get("kdl_server","http://127.0.0.1:8787"),token:LS.get("kdl_token",""),me:null,view:"home",gid:null,aid:null,err:"",busy:false,data:{}};
+const $app=document.getElementById("app");
+const el=(tag,props,...kids)=>{const n=document.createElement(tag);for(const k in props||{}){const v=props[k];if(k==="class")n.className=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)n.setAttribute(k,v===true?"":v)}for(const c of kids.flat())if(c!=null&&c!==false)n.append(c.nodeType?c:document.createTextNode(String(c)));return n};
+async function api(method,path,body,hdr){
+  let res;
+  try{res=await fetch(st.server.replace(/\/+$/,"")+path,{method,headers:{...(st.token?{Authorization:"Bearer "+st.token}:{}),...(body!==undefined?{"Content-Type":"application/json"}:{}),...hdr},body:body!==undefined?JSON.stringify(body):undefined})}
+  catch(e){throw new Error("Сервер не отвечает. Проверьте адрес и что сервер запущен.")}
+  let j=null;try{j=await res.json()}catch(e){}
+  if(res.status===401&&st.token&&path!=="/api/auth/dev"){logout(true);throw new Error("Сессия закончилась, войдите снова.")}
+  if(!res.ok)throw new Error((j&&j.error)||"Ошибка "+res.status);
+  return j;
+}
+function logout(keepErr){st.token="";st.me=null;st.view="home";LS.del("kdl_token");if(!keepErr)st.err="";draw()}
+async function run(fn){if(st.busy)return;st.busy=true;st.err="";draw();try{await fn()}catch(e){st.err=e.message}st.busy=false;draw()}
+async function loadMe(){const j=await api("GET","/api/me");st.me=j.user;st.data.groups=j.groups||[];st.data.kids=j.athletes||[]}
+function head(sub,title,right){return el("header",null,right||null,el("small",null,sub),el("h1",null,title))}
+const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
+function loginView(){
+  const tg=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;
+  let role="coach";
+  const srv=el("input",{value:st.server,inputmode:"url",autocomplete:"off","aria-label":"Адрес сервера"}),name=el("input",{placeholder:"Например: Иван",maxlength:"40","aria-label":"Ваше имя",autocomplete:"off"});
+  const sel=el("select",{"aria-label":"Роль"},el("option",{value:"coach"},"Я тренер"),el("option",{value:"parent"},"Я родитель"));
+  const save=()=>{st.server=srv.value.trim();LS.set("kdl_server",st.server)};
+  return [head("Тестовая версия, данные учебные","Вход"),el("div",{class:"card"},
+    el("label",null,"Адрес сервера"),srv,el("label",null,"Ваше имя"),name,el("label",null,"Роль (учебный вход)"),sel,
+    errBox(),
+    el("button",{class:"btn",id:"login",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/dev",{name:name.value,role:sel.value});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти"),
+    tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+Telegram.WebApp.initData});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
+    el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."))];
+}
+const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
+/* ---------- тренер ---------- */
+function coachHome(){
+  const gs=st.data.groups||[],name=el("input",{placeholder:"Название группы, например Пн/Ср 17:00",maxlength:"40","aria-label":"Название группы"});
+  return [head("Тренер: "+st.me.name,"Мои группы",exit()),
+    ...gs.map(g=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,g.name),el("span",{class:"mut"},g.athletes+" уч.")),el("button",{class:"btn s",onclick:()=>run(async()=>{st.gid=g.id;st.view="group";st.gtab="students";st.moreDays=false;await loadGroup()})},"Открыть"))),
+    gs.length?null:el("p",{class:"mut"},"Групп пока нет. Создайте первую."),
+    (()=>{const tg=el("input",{id:"tgname",value:st.me.tgUsername||"",placeholder:"@ваш_telegram",maxlength:"33",autocapitalize:"off",autocomplete:"off","aria-label":"Ваше имя в Telegram"});
+      return el("div",{class:"card",id:"profcard"},el("b",null,"Ваш Telegram для видео"),el("p",{class:"mut",style:"margin:4px 0 0"},st.me.tgUsername?"Родители будут отправлять видео в этот чат.":"Укажите имя в Telegram (например @ivan_coach), чтобы родители могли отправлять вам видео."),tg,
+        el("button",{class:"btn s",id:"savetg",type:"button",disabled:st.busy,onclick:()=>run(async()=>{await api("POST","/api/me/profile",{tgUsername:tg.value});await loadMe()})},"Сохранить"))})(),
+    el("div",{class:"card"},el("b",null,"Новая группа"),name,errBox(),el("button",{class:"btn",id:"mkgroup",disabled:st.busy,onclick:()=>run(async()=>{await api("POST","/api/groups",{name:name.value});await loadMe()})},"Создать группу"))];
+}
+const BELTS=[["10 кю · белый (начальный)","#f4f4f0"],["9 кю · оранжевый","#e8872b"],["8 кю · синий","#2b6cb0"],["7 кю · синий с жёлтой полоской","#2b6cb0","#e6c200"],["6 кю · жёлтый","#e6c200"],["5 кю · жёлтый с зелёной полоской","#e6c200","#2f8f4e"],["4 кю · зелёный","#2f8f4e"],["3 кю · зелёный с коричневой полоской","#2f8f4e","#7a4a21"],["2 кю · коричневый","#7a4a21"],["1 кю · коричневый с золотой полоской","#7a4a21","#d4a017"],["1 дан · чёрный с золотой полоской","#111","#d4a017",1],["2 дан · чёрный с двумя золотыми полосками","#111","#d4a017",2],["3 дан · чёрный с тремя золотыми полосками","#111","#d4a017",3]].map(b=>({n:b[0],c:b[1],s:b[2],k:b[3]||1}));
+const BELT_REQ=[[["Физическая подготовка",["Отжимания на Сейкен 10","Приседания с выпрыгиванием 10","Подъём корпуса в положении лёжа 10"]]],[["Стойки",["Санчин дачи"]],["Удары руками",["Сейкен цуки (Чудан Дзёдан Гедан)","Сейкен аго учи"]],["Блоки",["Сейкен джодан уке","Сейкен чудан сото уке","Сейкен чудан учи уке","Сейкен мае гедан барай"]],["Удары ногами",["Хидза гери","Кин гери","Мае гери","Йоко Гери"]],["Идо Гейко",["В Дзенкуцу Дачи движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Тайкёку 1","Тайкёку 2","Тайкёку 3","Сокуги Тайкёку 1"]],["Физическая подготовка",["Отжимания на Сейкен 20","Приседания с выпрыгиванием 20","Подъём корпуса в положении лёжа 20"]],["Кумитэ",["2 боя по 1 мин"]]],[["Стойки",["Кокутсу дачи"]],["Удары руками",["Тетсуи ороши ганмен учи","Тетсуи коми ками учи","Тетсуи хизо учи","Тетсуи Йоко учи (Дзёдан Чудан Гедан)"]],["Блоки",["Сейкен джодан уке","Сейкен чудан сото уке","Сейкен чудан учи уке","Сейкен мае гедан барай","Учи уке-Гедан Барай"]],["Удары ногами",["Маэ Кеаге","Сото маваши кеаге","Учи маваши кеаге","Йоко кеаге"]],["Идо Гейко",["В Дзенкуцу Дачи движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Сокуги Тайкёку 2","Сокуги Тайкёку 3"]],["Физическая подготовка",["Отжимания на Сейкен 40","Приседания с выпрыгиванием 40","Подъём корпуса в положении лёжа 40"]],["Кумитэ",["3 боя по 1 мин"]]],[["Стойки",["Киба дачи"]],["Удары руками",["Шита Цуки","Дзёдан хиджи атэ","Агэ хиджи атэ","Ороши хиджи атэ","Уширо Хиджи атэ"]],["Блоки",["Сейкен джодан уке","Сейкен чудан сото уке","Сейкен чудан учи уке","Сейкен мае гедан барай","Учи уке-Гедан Барай"]],["Удары ногами",["Маэ Кеаге","Сото маваши кеаге","Учи маваши кеаге","Йоко кеаге"]],["Идо Гейко",["В Дзенкуцу Дачи, Кокутсу Дачи, Киба дачи, движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Пинан 1"]],["Физическая подготовка",["Отжимания на Сейкен 45","Приседания с выпрыгиванием 45","Подъём корпуса в положении лёжа 45"]],["Кумитэ",["4 боя по 1 мин"]]],[["Стойки",["Комплекс: Фудо дачи + Санчин дачи + Кокутсу дачи + Дзенкуцу дачи + Киба дачи + Каке дачи + Цуруаши дачи + Некоаши дачи"]],["Удары руками",["Уракен шомен ганмен учи","Уракен Саю ганмен учи","Уракен хизо учи","Уракен ороши ганмен учи","Уракен Маваши учи"]],["Блоки",["Сейкен джодан уке","Сейкен чудан сото уке","Сейкен чудан учи уке","Сейкен мае гедан барай","Учи уке-Гедан Барай"]],["Удары ногами",["Мае гери","Йоко гери","Уширо гери","Маваши гери"]],["Идо Гейко",["В Дзенкуцу Дачи, Кокутсу Дачи, Киба дачи, движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Пинан 2","Санчин"]],["Физическая подготовка",["Отжимания на Сейкен 50","Приседания с выпрыгиванием 50","Подъём корпуса в положении лёжа 50"]],["Кумитэ",["5 боёв по 1 мин"]]],[["Стойки",["Комплекс: Фудо дачи + Санчин дачи + Кокутсу дачи + Дзенкуцу дачи + Киба дачи + Каке дачи + Цуруаши дачи + Некоаши дачи"]],["Удары руками",["Шуто сакуцу учи","Шуто сакутсу учи коми","Шуто Йоко ганмен учи","Шуто хизо учи","Шуто дзёдан учи учи"]],["Блоки",["Сейкен джодан уке","Сейкен чудан сото уке","Сейкен чудан учи уке","Сейкен мае гедан барай","Учи уке-Гедан Барай"]],["Удары ногами",["Мае гери","Йоко гери","Уширо гери","Маваши гери"]],["Идо Гейко",["В Дзенкуцу Дачи, Кокутсу Дачи, Киба дачи, движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Пинан 3","Янцу"]],["Физическая подготовка",["Отжимания на Сейкен 60","Приседания с выпрыгиванием 60","Подъём корпуса в положении лёжа 60"]],["Кумитэ",["6 боёв по 1 мин"]]],[["Удары руками",["Шотей учи (Дзёдан Чудан Гедан)"]],["Блоки",["Шотей уке"]],["Удары ногами",["Мае кеаге","Сото маваши кеаге","Учи маваши кеаге","Йоко кеаге","Хиза гери","Кинтеки гери","Мае гери","Йоко гери","Уширо гери","Маваши гери"]],["Идо Гейко",["В Дзенкуцу Дачи, Кокутсу Дачи, Киба дачи, движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Пинан 4","Цуки но ката"]],["Физическая подготовка",["Отжимания на Сейкен 70","Приседания с выпрыгиванием 70","Подъём корпуса в положении лёжа 70"]],["Кумитэ",["7 боёв по 1 мин"]]],[["Удары руками",["Кокен учи (Дзёдан Чудан Гедан)"]],["Блоки",["Кокен уке"]],["Удары ногами",["Мае кеаге","Сото маваши кеаге","Учи маваши кеаге","Йоко кеаге","Хиза гери","Кинтеки гери","Мае гери","Йоко гери","Уширо гери","Маваши гери"]],["Идо Гейко",["В Дзенкуцу Дачи, Кокутсу Дачи, Киба дачи, движение вперёд назад, поворот — в сочетании с техникой"]],["Ката",["Пинан 5","Гэкисай 1"]],["Физическая подготовка",["Отжимания на Сейкен 80","Приседания с выпрыгиванием 80","Подъём корпуса в положении лёжа 80"]],["Кумитэ",["8 боёв по 1 мин"]]],[["Удары руками",["Хиракен учи (Дзёдан Чудан)","Хиракен маваши учи","Хайто учи (Дзёдан Чудан Гедан)","Хайшо учи (Дзёдан Чудан)"]],["Блоки",["Мае маваши уке (с ибуки)"]],["Удары ногами",["Тоби мае гери"]],["Идо Гейко",["Из кумитэ но камае:","Учи хайсоку дзёдан гери, Сото ороши какато гери, Учи ороши какато гери","Гохон гери соно ичи: Мае гери + Йоко гери + Уширо гери + Мае гери + Йоко гери (все удары в Чудан)","Гохон гери соно ни: Маваши гери + Уширо маваши гери + Мае гери + Маваши гери + Уширо маваши гери (все удары в Дзёдан)"]],["Ката",["Гэкисай 2","Тэкки 1","Тайкёку Ура 1-3"]],["Физическая подготовка",["Отжимания на Сейкен 90","Приседания с выпрыгиванием 90","Подъём корпуса в положении лёжа 90"]],["Кумитэ",["9 боёв по 1 мин"]]],[["Удары руками",["Хиракен учи (Дзёдан Чудан)","Хиракен маваши учи","Хайто учи (Дзёдан Чудан Гедан)","Хайшо учи (Дзёдан Чудан)"]],["Блоки",["Мае маваши уке (с ибуки)"]],["Удары ногами",["Нидан тоби мае гери"]],["Идо Гейко",["Из кумитэ но камае:","Тоби мае гери (с передней ноги), Тоби мае гери (с задней ноги), Тоби йоко гери","Гохон гери соно ичи: Мае гери + Йоко гери + Уширо гери + Мае гери + Йоко гери (все удары в Чудан)","Гохон гери соно ни: Маваши гери + Уширо маваши гери + Мае гери + Маваши гери + Уширо маваши гери (все удары в Дзёдан)"]],["Ката",["Гэкисай 3","Тэкки 2"]],["Физическая подготовка",["Отжимания на Сейкен 100","Приседания с выпрыгиванием 100","Подъём корпуса в положении лёжа 100"]],["Кумитэ",["10 боёв по 1 мин"]]],[["Курс",["Полный технический курс"]],["Ката",["Пинан Ура 1-5","Сайфа"]],["Физическая подготовка",["Отжимания на Сейкен 100","Приседания с выпрыгиванием 100","Подъём корпуса в положении лёжа 100"]],["Кумитэ",["10 боёв по 1 мин"]]],[["Курс",["Полный технический курс"]],["Ката",["Сэйэнчин","Гару","Тэкки 3","Бассай"]],["Физическая подготовка",["Отжимания на Сейкен 100","Приседания с выпрыгиванием 100","Подъём корпуса в положении лёжа 100"]],["Кумитэ",["20 боёв по 1 мин"]]],[["Курс",["Полный технический курс"]],["Ката",["Сэйпай"]],["Физическая подготовка",["Отжимания на Сейкен 100","Приседания с выпрыгиванием 100","Подъём корпуса в положении лёжа 100"]],["Кумитэ",["30 боёв по 1 мин"]]]];
+const beltEl=i=>{const b=BELTS[Math.min(Math.max(i|0,0),BELTS.length-1)];return el("span",{class:"belt"},el("b",{style:`background:${b.c}`},b.s?Array.from({length:b.k},(_,j)=>el("u",{style:`background:${b.s};right:${5+j*5}px`})):null),b.n)};
+const reqEl=(i,brief)=>{const r=BELT_REQ[i];if(!r)return null;const rows=brief?r.filter(([h])=>h==="Ката"||h==="Кумитэ"):r;return el("div",{class:"rq"},rows.map(([h,it])=>el("div",{class:"rs"},el("div",{class:"rh"},h),el("ul",null,it.map(x=>el("li",null,x))))))};
+const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+async function loadAtt(day){const j=await api("GET",`/api/groups/${st.gid}/attendance?date=${day}`);st.data.att={date:day,rows:j.athletes.map(a=>({id:a.id,name:a.name,present:a.present===null?null:a.present===1}))}}
+async function loadGroup(){const [a,t]=await Promise.all([api("GET",`/api/groups/${st.gid}/athletes`),api("GET",`/api/tasks?groupId=${st.gid}`)]);st.data.athletes=a.athletes;st.data.tasks=t.tasks;st.data.code=null;await loadSched();const d=trainingDays();const keep=st.data.att&&d.includes(st.data.att.date)?st.data.att.date:d[0];await pickDay(keep)}
+const VST={sent:"отправлено",accepted:"принято",redo:"доработать"};
+function videoBlock(t){
+  const ath=st.data.athletes||[],vs=t.videos||[],wait=ath.filter(a=>!vs.some(v=>v.athleteId===a.id));
+  return el("div",{class:"vid",id:"vid-"+t.id},el("b",null,"Видео"),
+    ...vs.map(v=>{const a=ath.find(x=>x.id===v.athleteId);if(!a)return null;const c=el("input",{placeholder:"Комментарий (необязательно)",maxlength:"200","aria-label":"Комментарий для "+a.name,value:v.comment||""});
+      const rv=status=>run(async()=>{await api("POST",`/api/tasks/${t.id}/video/review`,{athleteId:a.id,status,comment:c.value});await loadGroup()});
+      return el("div",{class:"vrow"},el("div",{class:"row"},el("span",null,a.name),el("span",{class:"pill"+(v.status==="accepted"?" done":"")},VST[v.status])),c,
+        el("div",{class:"two"},el("button",{class:"btn s ok-b",type:"button",disabled:st.busy,onclick:()=>rv("accepted")},"Принято"),el("button",{class:"btn s redo-b",type:"button",disabled:st.busy,onclick:()=>rv("redo")},"Доработать")))}),
+    wait.length?el("p",{class:"mut",style:"margin:6px 0 0"},"Ещё не отправили: "+wait.map(a=>a.name).join(", ")):null);
+}
+function groupView(){
+  const g=(st.data.groups||[]).find(x=>x.id===st.gid)||{name:"Группа"},tab=st.gtab||"students";
+  const nm=el("input",{placeholder:"Имя ученика (только имя)",maxlength:"40","aria-label":"Имя ученика"});
+  const tabs=el("div",{class:"tabs",role:"group","aria-label":"Разделы группы"},[["students","Ученики"],["att","Занятия"],["tasks","Задания"],["belts","Пояса"]].map(([k,l])=>el("button",{type:"button",id:"tab-"+k,"aria-pressed":String(tab===k),onclick:()=>{st.gtab=k;st.err="";draw()}},l)));
+  let body;
+  if(tab==="students")body=[
+    ...(st.data.athletes||[]).map(a=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,a.name),el("span",{class:"pill"+(a.linked?" done":"")},a.linked?"привязан":"не привязан")),
+      el("div",{style:"margin:6px 0 0"},beltEl(a.belt)),
+      el("button",{class:"btn s",onclick:()=>run(async()=>{const j=await api("POST",`/api/athletes/${a.id}/invite`,{kind:"parent"});st.data.code={id:a.id,code:j.code,name:a.name}})},"Код для родителя"),
+      st.data.code&&st.data.code.id===a.id?el("div",null,el("div",{class:"code",id:"code"},st.data.code.code),el("p",{class:"mut"},"Отправьте код родителю. Он одноразовый и действует 7 дней.")):null)),
+    el("div",{class:"card"},nm,errBox(),el("button",{class:"btn",id:"addath",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/groups/${st.gid}/athletes`,{name:nm.value});await loadGroup()})},"Добавить ученика"))];
+  else if(tab==="att")body=[attCard(),schedCard()];
+  else if(tab==="belts")body=[
+    ...(st.data.athletes||[]).map(a=>{const nx=BELTS[a.belt+1];return el("div",{class:"card belt-card"},el("b",null,a.name),el("div",{style:"margin:6px 0"},beltEl(a.belt)),
+      nx?el("button",{class:"btn promote",type:"button",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/athletes/${a.id}/belt`,{belt:a.belt+1});await loadGroup()})},"Повысить до "+nx.n.split(" · ")[0]):el("p",{class:"mut",style:"margin:6px 0 0"},"Высшая ступень в приложении"),
+      el("details",null,el("summary",null,"Другой пояс и критерии"),
+        el("label",null,"Назначить пояс"),
+        el("select",{"aria-label":"Пояс "+a.name,class:"beltsel",onchange:e=>run(async()=>{await api("POST",`/api/athletes/${a.id}/belt`,{belt:Number(e.target.value)});await loadGroup()})},BELTS.map((b,i)=>el("option",{value:i,selected:i===a.belt},b.n))),
+        nx?el("div",null,el("p",{class:"mut",style:"margin:10px 0 0"},"Критерии следующего пояса:"),reqEl(a.belt+1)):null))}),
+    (st.data.athletes||[]).length?el("p",{class:"mut"},"Пояс и аттестацию определяет тренер. Критерии — ориентир."):el("p",{class:"mut"},"Сначала добавьте учеников.")];
+  else body=[
+    ...(st.data.tasks||[]).map(t=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,t.title),el("span",{class:"pill"},`${t.done} из ${t.total}`)),el("p",{class:"mut",style:"margin:4px 0 0"},t.exercises.map(e=>`${e.name} — ${e.minutes} мин`).join("; ")),
+      t.video?videoBlock(t):null,
+      el("ul",{class:"who","aria-label":"Кто выполнил"},(st.data.athletes||[]).map(a=>{const d=(t.doneBy||[]).includes(a.id);return el("li",{class:d?"ok":"mut"},(d?"✓ ":"○ ")+a.name)})))),
+    (st.data.tasks||[]).length?null:el("p",{class:"mut"},"Заданий пока нет."),
+    el("button",{class:"btn",id:"newtask",onclick:()=>{st.view="task";draw()}},"Новое задание")];
+  return [head("Группа",g.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,...body];
+}
+const fmtDay=d=>d.slice(8)+"."+d.slice(5,7);
+const WD=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const wdOf=d=>(new Date(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8)).getDay()+6)%7; // 0=Пн
+const dstr=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+/* Дни, которые показываем для отметок: дни по расписанию и дополнительные за последние 4 недели, плюс уже отмеченные. */
+function trainingDays(){
+  const sc=st.data.sched||{days:[],extra:[],cancelled:[]},out=new Set(),now=new Date(),cx=new Set(sc.cancelled||[]);
+  for(let i=0;i<28;i++){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i),k=dstr(d);if(sc.days.includes(wdOf(k)+1)&&!cx.has(k))out.add(k)}
+  const today=todayStr();
+  sc.extra.forEach(e=>{if(e.day<=today&&e.day>=dstr(new Date(now.getFullYear(),now.getMonth(),now.getDate()-28)))out.add(e.day)});
+  (st.data.hist||[]).forEach(h=>{if(!cx.has(h.day))out.add(h.day)});
+  return [...out].sort().reverse().slice(0,14);
+}
+async function loadSched(){const[sc,h]=await Promise.all([api("GET",`/api/groups/${st.gid}/schedule`),api("GET",`/api/groups/${st.gid}/attendance/days`)]);st.data.sched=sc;st.data.hist=h.days}
+async function pickDay(day){if(day)await loadAtt(day);else st.data.att=null}
+async function saveMarks(marks){const A=st.data.att;try{await api("POST",`/api/groups/${st.gid}/attendance`,{date:A.date,marks});st.err="";st.data.hist=(await api("GET",`/api/groups/${st.gid}/attendance/days`)).days}catch(e){st.err=e.message;await loadAtt(A.date)}draw()}
+function schedCard(){
+  const sc=st.data.sched;if(!sc)return null;
+  const today=todayStr(),next=sc.extra.filter(e=>e.day>=today).reverse();
+  const dt=el("input",{type:"date",id:"exdate",min:today,"aria-label":"Дата дополнительной тренировки"}),nt=el("input",{id:"exnote",placeholder:"Например: Спарринги",maxlength:"60","aria-label":"Что за тренировка"});
+  return el("div",{class:"card",id:"schedcard"},el("b",null,"Расписание тренировок"),el("p",{class:"mut",style:"margin:4px 0 8px"},"Нажмите на дни недели, в которые у группы тренировки."),
+    el("div",{class:"wd",role:"group","aria-label":"Дни недели"},WD.map((n,i)=>el("button",{type:"button","aria-pressed":String(sc.days.includes(i+1)),onclick:()=>run(async()=>{const days=sc.days.includes(i+1)?sc.days.filter(x=>x!==i+1):[...sc.days,i+1];await api("POST",`/api/groups/${st.gid}/schedule`,{days});await loadSched();const t=trainingDays();await pickDay(st.data.att&&t.includes(st.data.att.date)?st.data.att.date:t[0])})},n))),
+    el("label",null,"Дополнительный день (например, в воскресенье спарринги)"),dt,nt,
+    el("button",{class:"btn s",id:"addday",type:"button",onclick:()=>run(async()=>{if(!dt.value)throw new Error("Выберите дату");const d=dt.value;await api("POST",`/api/groups/${st.gid}/sessions`,{date:d,note:nt.value});await loadSched();if(d<=todayStr())await pickDay(d)})},"Добавить день"),
+    (()=>{const lim=dstr(new Date(Date.now()-28*864e5)),cx=(sc.cancelled||[]).filter(d=>d>=lim).slice(0,6);return cx.length?el("div",{id:"cancelled"},el("label",null,"Отменённые тренировки"),el("div",{style:"display:flex;flex-wrap:wrap;gap:8px"},cx.map(d=>el("button",{type:"button",class:"chip",onclick:()=>run(async()=>{await api("POST",`/api/groups/${st.gid}/sessions`,{date:d});await loadSched();if(d<=todayStr())await pickDay(d)})},`Вернуть ${WD[wdOf(d)]} ${fmtDay(d)}`)))):null})(),
+    next.length?el("p",{class:"mut",style:"margin:8px 0 0"},"Ближайшие дополнительные: "+next.map(e=>`${WD[wdOf(e.day)]} ${fmtDay(e.day)}${e.note?" — "+e.note:""}`).join("; ")):null);
+}
+function attCard(){
+  const A=st.data.att,days=trainingDays(),sc=st.data.sched;
+  if(!A)return el("div",{class:"card",id:"attcard"},el("b",null,"Посещаемость"),el("p",{class:"mut",style:"margin:4px 0 0"},sc&&sc.days.length?"За последние 4 недели тренировок не было.":"Сначала отметьте дни тренировок в расписании выше."));
+  const set=(r,v)=>{r.present=v;draw();saveMarks([{athleteId:r.id,present:v}])};
+  const rest=A.rows.filter(r=>r.present===null),hist=new Map((st.data.hist||[]).map(h=>[h.day,h]));
+  const note=((sc&&sc.extra)||[]).find(e=>e.day===A.date);
+  const shown=st.moreDays?days:days.slice(0,2).concat(days.slice(2).includes(A.date)?[A.date]:[]);
+  return el("div",{class:"card",id:"attcard"},el("b",null,"Посещаемость"),el("p",{class:"mut",style:"margin:4px 0 0"},"Выберите день тренировки и отметьте учеников. Отметки сохраняются сразу."),
+    el("div",{id:"hist"},shown.map(d=>{const h=hist.get(d),e=((sc&&sc.extra)||[]).find(x=>x.day===d);return el("span",{class:"cw"},
+        el("button",{type:"button",class:"chip","aria-pressed":String(d===A.date),onclick:()=>run(()=>loadAtt(d))},`${WD[wdOf(d)]} ${fmtDay(d)}${e&&e.note?" · "+e.note:""}${h?` · ${h.present}/${h.marked}`:""}`),
+        el("button",{type:"button",class:"cx","aria-label":`Отменить тренировку ${WD[wdOf(d)]} ${fmtDay(d)}`,onclick:()=>{st.confirmCancel=d;draw()}},"×"))}),
+      days.length>2?el("button",{type:"button",class:"chip",id:"moredays",onclick:()=>{st.moreDays=!st.moreDays;draw()}},st.moreDays?"Скрыть":`Ещё ${days.length-shown.length}`):null),
+    st.confirmCancel?el("div",{class:"warn",id:"cancelbox"},el("p",{style:"margin:0 0 8px"},`Отменить тренировку ${WD[wdOf(st.confirmCancel)]} ${fmtDay(st.confirmCancel)}? Отметки этого дня удалятся.`),
+      el("button",{class:"btn",id:"cancelyes",type:"button",onclick:()=>run(async()=>{const d=st.confirmCancel;await api("POST",`/api/groups/${st.gid}/sessions/cancel`,{date:d});st.confirmCancel=null;await loadSched();const t=trainingDays();await pickDay(t.includes(A.date)&&A.date!==d?A.date:t[0])})},"Да, отменить"),
+      el("button",{class:"btn s",type:"button",onclick:()=>{st.confirmCancel=null;draw()}},"Нет, оставить")):null,
+    el("p",{class:"mut",style:"margin:6px 0 0"},"Цифры у дня: сколько пришло из отмеченных."),
+    el("p",{style:"margin:12px 0 0"},el("b",null,`${WD[wdOf(A.date)]} ${fmtDay(A.date)}${note&&note.note?" · "+note.note:""}`)),
+    ...A.rows.map(r=>el("div",{class:"att"},el("span",null,r.name),
+      el("button",{type:"button",class:"yes","aria-pressed":String(r.present===true),onclick:()=>set(r,true)},"Был"),
+      el("button",{type:"button",class:"no","aria-pressed":String(r.present===false),onclick:()=>set(r,false)},"Не был"))),
+    A.rows.length?null:el("p",{class:"mut"},"Сначала добавьте учеников."),
+    rest.length?el("button",{class:"btn s",id:"allyes",type:"button",onclick:()=>{rest.forEach(r=>r.present=true);draw();saveMarks(rest.map(r=>({athleteId:r.id,present:true})))}},"Остальные были"):null);
+}
+function taskView(){
+  const nv=el("input",{type:"checkbox",id:"needvideo"}),title=el("input",{value:"Неделя 1",maxlength:"80","aria-label":"Название"}),note=el("input",{placeholder:"Комментарий (необязательно)",maxlength:"200","aria-label":"Комментарий"}),rows=el("div");
+  const addRow=()=>{if(rows.children.length>=10)return;const n=el("input",{class:"xn",placeholder:"Что делать, например: Мае-гэри 20 раз",maxlength:"60","aria-label":"Упражнение"});
+    const m=el("select",{class:"xm","aria-label":"Минуты"},Array.from({length:60},(_,i)=>el("option",{value:i+1,selected:i+1===5},(i+1)+" мин")));
+    const d=el("button",{type:"button","aria-label":"Убрать упражнение",onclick:()=>{if(rows.children.length>1)r.remove()}},"×");const r=el("div",{class:"xrow"},n,m,d);rows.append(r)};
+  addRow();
+  return [head("Новое задание","Что делать ученикам",el("button",{onclick:()=>{st.view="group";draw()}},"Назад")),
+    el("div",{class:"card"},el("label",null,"Название"),title,el("label",null,"Комментарий"),note,el("label",{class:"chk"},nv,"Нужно видео от ученика (отправит вам в Telegram)"),el("label",null,"Упражнения и время"),rows,
+      el("button",{class:"btn s",id:"addrow",type:"button",onclick:addRow},"Добавить упражнение"),errBox(),
+      el("button",{class:"btn",id:"publish",disabled:st.busy,onclick:()=>run(async()=>{
+        const exercises=[...rows.children].map(r=>({name:r.querySelector(".xn").value,minutes:Number(r.querySelector(".xm").value)}));
+        await api("POST","/api/tasks",{groupId:st.gid,title:title.value,note:note.value,exercises,video:nv.checked});await loadGroup();st.gtab="tasks";st.view="group"})},"Назначить"))];
+}
+/* ---------- родитель ---------- */
+function parentHome(){
+  const kids=st.data.kids||[],code=el("input",{placeholder:"Код от тренера",maxlength:"12",autocapitalize:"characters",autocomplete:"off","aria-label":"Код от тренера"});
+  return [head("Родитель: "+st.me.name,"Мои дети",exit()),
+    ...kids.map(k=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,k.name),el("span",{class:"mut"},k.groupName)),el("div",{style:"margin:6px 0 0"},beltEl(k.belt)),el("button",{class:"btn s",onclick:()=>run(async()=>{st.aid=k.id;st.view="kid";st.ktab="tasks";st.kmore=false;await loadKid()})},"Открыть"))),
+    kids.length?null:el("p",{class:"mut"},"Пока никого не привязано. Введите код от тренера."),
+    el("div",{class:"card"},el("b",null,"Привязать ребёнка"),code,
+      el("label",{class:"chk consent"},el("input",{type:"checkbox",id:"consent",checked:!!st.consent,onchange:e=>{st.consent=e.target.checked;document.getElementById("link").disabled=!st.consent||st.busy}}),"Я родитель или законный представитель ребёнка и согласен(на), что тренер видит в приложении имя ребёнка, пояс, посещаемость и выполнение заданий. Видео отправляется тренеру в Telegram и в приложении не хранится."),
+      errBox(),el("button",{class:"btn",id:"link",disabled:!st.consent||st.busy,onclick:()=>run(async()=>{await api("POST","/api/link",{code:code.value,consent:!!st.consent});await loadMe()})},"Привязать"))];
+}
+async function loadKid(){const [j,at]=await Promise.all([api("GET",`/api/my/tasks?athleteId=${st.aid}`),api("GET",`/api/my/attendance?athleteId=${st.aid}`)]);st.data.mine=j.tasks;st.data.kidAtt=at;st.data.kidBelt=j.athlete.belt}
+function kidVideo(t,k){
+  const v=t.videoStatus,tg=k&&k.coachTg;
+  return el("div",{class:"vid"},el("b",null,"Нужно видео"),
+    v&&v.status==="accepted"?el("p",{class:"ok",style:"margin:4px 0"},"Принято ✓"+(v.comment?" — "+v.comment:"")):[
+      v&&v.status==="redo"?el("p",{style:"margin:4px 0;color:var(--brand-ink);font-weight:600"},"Доработать"+(v.comment?": "+v.comment:"")):null,
+      v&&v.status==="sent"?el("p",{class:"mut",style:"margin:4px 0"},"Отправлено, ждём ответ тренера."):el("p",{class:"mut",style:"margin:4px 0"},"Запишите видео, отправьте его тренеру в Telegram (напишите имя ребёнка и название задания), затем нажмите «Я отправил(а) видео»."),
+      tg?el("a",{class:"btn s lnk",href:"https://t.me/"+encodeURIComponent(tg),target:"_blank",rel:"noopener"},"Открыть чат тренера в Telegram"):el("p",{class:"mut",style:"margin:4px 0"},"Тренер ещё не указал свой Telegram."),
+      v&&v.status==="sent"?null:el("button",{class:"btn sendvid",type:"button",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/tasks/${t.id}/video`,{athleteId:st.aid});await loadKid()})},"Я отправил(а) видео")]);
+}
+function ringEl(pct){
+  const NS="http://www.w3.org/2000/svg",r=34,c=2*Math.PI*r,mk=(n,a)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e};
+  const svg=mk("svg",{width:84,height:84,viewBox:"0 0 84 84",role:"img","aria-label":`Посещаемость ${pct}%`,class:"ring"});
+  svg.append(mk("circle",{cx:42,cy:42,r,fill:"none","stroke-width":9,class:"rg"}),mk("circle",{cx:42,cy:42,r,fill:"none","stroke-width":9,"stroke-linecap":"round",class:"rv","stroke-dasharray":`${c*pct/100} ${c}`,transform:"rotate(-90 42 42)"}));
+  const tx=mk("text",{x:42,y:48,"text-anchor":"middle",class:"rt"});tx.textContent=pct+"%";svg.append(tx);return svg;
+}
+function attView(){
+  const t=st.data.kidAtt;
+  if(!t||!t.total)return el("div",{class:"card",id:"kidatt"},el("b",null,"Посещаемость"),el("p",{class:"mut",style:"margin:4px 0 0"},"Тренер пока не отмечал."));
+  const pct=Math.round(100*t.present/t.total),all=t.days,rows=st.kmore?all:all.slice(0,8),last=all.slice(0,12).reverse();
+  return el("div",{id:"kidatt"},
+    el("div",{class:"card"},el("b",null,"Посещаемость"),
+      el("div",{class:"arc"},ringEl(pct),el("div",null,el("div",{class:"big"},`${t.present} из ${t.total}`),el("div",{class:"mut"},"тренировок посещено"))),
+      el("div",{class:"dots",role:"img","aria-label":"Последние тренировки: "+last.map(d=>fmtDay(d.day)+(d.present?" был":" не был")).join(", ")},last.map(d=>el("span",{class:"dot "+(d.present?"y":"n"),title:fmtDay(d.day)+(d.present?" был":" не был")}))),
+      el("p",{class:"mut",style:"margin:4px 0 0;font-size:12px"},"Последние тренировки: слева старые, справа новые")),
+    el("div",{class:"card"},el("b",null,"Тренировки"),
+      el("div",{class:"alist"},rows.map(d=>el("div",{class:"arow"},el("span",null,WD[wdOf(d.day)]+" "+fmtDay(d.day)),el("span",{class:"pill "+(d.present?"done":"miss")},d.present?"Был ✓":"Не был ✗")))),
+      all.length>8?el("button",{class:"btn s",id:"kmore",type:"button",onclick:()=>{st.kmore=!st.kmore;draw()}},st.kmore?"Свернуть":`Показать все (${all.length})`):null));
+}
+function kidView(){
+  const k=(st.data.kids||[]).find(x=>x.id===st.aid)||{name:"Ребёнок"},tab=st.ktab||"tasks";
+  const open=(st.data.mine||[]).filter(t=>t.status!=="done").length;
+  const tabs=el("div",{class:"tabs t3",role:"group","aria-label":"Разделы"},[["tasks","Задания"+(open?` (${open})`:"")],["att","Посещаемость"],["belt","Пояс"]].map(([id,l])=>el("button",{type:"button",id:"tab-k-"+id,"aria-pressed":String(tab===id),onclick:()=>{st.ktab=id;draw()}},l)));
+  let body;
+  if(tab==="belt")body=[
+    (()=>{const bi=st.data.kidBelt||0,nx=BELTS[bi+1];return el("div",{class:"card",id:"kidbelt"},el("b",null,"Пояс"),el("div",{style:"margin:6px 0"},beltEl(bi)),
+      nx?el("div",null,el("p",{class:"mut",style:"margin:8px 0 0"},"Следующий пояс:"),el("div",{style:"margin:4px 0"},beltEl(bi+1)),reqEl(bi+1,true),el("details",null,el("summary",null,"Все критерии перехода"),reqEl(bi+1))):el("p",{class:"mut",style:"margin:6px 0 0"},"Высшая ступень в приложении"),
+      el("p",{class:"mut",style:"margin:8px 0 0"},"Пояс определяет тренер. Выполнение заданий пояс не меняет."))})()];
+  else if(tab==="att")body=[attView()];
+  else body=[
+    ...(st.data.mine||[]).map(t=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,t.title),el("span",{class:"pill"+(t.status==="done"?" done":"")},t.status==="done"?"выполнено":"назначено")),
+      t.note?el("p",{class:"mut",style:"margin:4px 0"},t.note):null,
+      el("ul",null,t.exercises.map(e=>el("li",null,`${e.name} — ${e.minutes} мин`))),
+      t.video?kidVideo(t,k):null,
+      t.status==="done"?null:el("button",{class:"btn done",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/tasks/${t.id}/done`,{athleteId:st.aid});await loadKid()})},"Сделано"))),
+    (st.data.mine||[]).length?null:el("p",{class:"mut"},"Заданий пока нет.")];
+  return [head("Ребёнок",k.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,errBox(),...body];
+}
+function draw(){
+  const keep=document.activeElement&&document.activeElement.id;
+  const isC=st.me&&(st.me.role==="coach"||st.me.role==="owner");
+  const parts=!st.me?loginView():isC?(st.view==="group"?groupView():st.view==="task"?taskView():coachHome()):(st.view==="kid"?kidView():parentHome());
+  $app.replaceChildren(...parts.filter(Boolean));
+  if(keep){const n=document.getElementById(keep);if(n)n.focus()}
+}
+if(window.Telegram&&Telegram.WebApp){try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}}
+(async()=>{if(st.token){try{await loadMe()}catch(e){st.token="";st.err=e.message}}draw()})();
+</script></body></html>
