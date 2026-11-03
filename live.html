@@ -4,7 +4,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="robots" content="noindex,nofollow">
 <title>Карате дома: с сервером (учебная)</title>
-<script async src="https://telegram.org/js/telegram-web-app.js"></script>
+<script async src="https://telegram.org/js/telegram-web-app.js" onload="window.__tgReady&&window.__tgReady()"></script>
 <style>
 :root{--bg:#F4F4F2;--card:#FFFFFF;--ink:#101113;--mut:#565B63;--line:#DADCE0;--bd:#80858D;--hl:#FBEBEC;--brand:#C4161F;--brand-ink:#C4161F;--on-brand:#fff;--ok:#2F7D4F;--focus:#E0A82E;--hdr:#141518;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0B0C0E;--card:#141518;--ink:#F5F5F3;--mut:#A4A9B1;--line:#2A2D33;--bd:#6E747D;--hl:#2A1518;--brand:#D9232D;--brand-ink:#FF5A62;--hdr:#0B0C0E;color-scheme:dark}}
@@ -295,6 +295,9 @@ function draw(){
   $app.replaceChildren(...parts.filter(Boolean));
   if(keep){const n=document.getElementById(keep);if(n)n.focus()}
 }
-if(window.Telegram&&Telegram.WebApp){try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}}
+const tgInit=()=>{if(window.Telegram&&Telegram.WebApp){try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}}};
+tgInit();
+/* Скрипт Telegram грузится асинхронно: когда он догрузится, перерисовываем форму входа, чтобы появилась кнопка «Войти через Telegram». */
+window.__tgReady=()=>{tgInit();if(!st.me&&!st.busy)draw()};
 (async()=>{if(st.token){try{await loadMe()}catch(e){st.token="";st.err=e.message}}draw()})();
 </script></body></html>
