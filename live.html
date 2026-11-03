@@ -97,8 +97,10 @@ async function run(fn){if(st.busy)return;st.busy=true;st.err="";draw();try{await
 async function loadMe(){const j=await api("GET","/api/me");st.me=j.user;st.data.groups=j.groups||[];st.data.kids=j.athletes||[]}
 function head(sub,title,right){return el("header",null,right||null,el("small",null,sub),el("h1",null,title))}
 const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
+/* Данные входа Telegram: из скрипта Telegram, а если он не загрузился, из адреса страницы (#tgWebAppData=...), куда их кладёт приложение Telegram. */
+const tgInitData=()=>{try{const a=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(a)return a;return new URLSearchParams((location.hash||"").replace(/^#/,"")).get("tgWebAppData")||""}catch(e){return ""}};
 function loginView(){
-  const tg=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;
+  const tg=tgInitData();
   let role="coach";
   const srv=el("input",{value:st.server,inputmode:"url",autocomplete:"off","aria-label":"Адрес сервера"}),name=el("input",{placeholder:"Например: Иван",maxlength:"40","aria-label":"Ваше имя",autocomplete:"off"});
   const sel=el("select",{"aria-label":"Роль"},el("option",{value:"coach"},"Я тренер"),el("option",{value:"parent"},"Я родитель"));
@@ -107,8 +109,9 @@ function loginView(){
     el("label",null,"Адрес сервера"),srv,el("label",null,"Ваше имя"),name,el("label",null,"Роль (учебный вход)"),sel,
     errBox(),
     el("button",{class:"btn",id:"login",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/dev",{name:name.value,role:sel.value});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти"),
-    tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+Telegram.WebApp.initData});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
-    el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."))];
+    tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
+    el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 3 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 /* ---------- тренер ---------- */
