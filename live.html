@@ -92,7 +92,7 @@ function onTap(n,v){let last=0,sx=0,sy=0;
   n.addEventListener("touchstart",e=>{const q=e.touches[0];if(q){sx=q.clientX;sy=q.clientY}},{passive:true});
   n.addEventListener("touchend",e=>{const q=e.changedTouches[0];if(q&&near(q.clientX,q.clientY))fire(e)},{passive:true})}
 const ev={t:0,p:0,c:0,last:"—"},tr=[],T0=Date.now();
-const T=m=>{tr.push(((Date.now()-T0)/1000).toFixed(1)+"с "+m);if(tr.length>12)tr.shift();const b=document.getElementById("evlog");if(b)b.textContent=evText()};
+const T=m=>{if(tr.length&&tr[tr.length-1].endsWith(" "+m))return;tr.push(((Date.now()-T0)/1000).toFixed(1)+"с "+m);if(tr.length>30)tr.shift();const b=document.getElementById("evlog");if(b)b.textContent=evText()};
 const evText=()=>"касаний: "+ev.t+" · нажатий: "+ev.p+" · кликов: "+ev.c+" · последнее место: "+ev.last+(tr.length?"\nЖурнал: "+tr.join(" | "):"");
 ["touchstart","pointerdown","click"].forEach(k=>document.addEventListener(k,e=>{
   if(k==="touchstart")ev.t++;else if(k==="pointerdown")ev.p++;else ev.c++;
@@ -139,7 +139,7 @@ function loginView(){
     el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
     tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
     el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
-    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 8 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 9 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 /* ---------- тренер ---------- */
@@ -320,11 +320,21 @@ function kidView(){
   return [head("Ребёнок",k.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,errBox(),...body];
 }
 function draw(){
-  const keep=document.activeElement&&document.activeElement.id;
-  const isC=st.me&&(st.me.role==="coach"||st.me.role==="owner");
-  const parts=!st.me?loginView():isC?(st.view==="group"?groupView():st.view==="task"?taskView():coachHome()):(st.view==="kid"?kidView():parentHome());
-  $app.replaceChildren(...parts.filter(Boolean));
-  if(keep){const n=document.getElementById(keep);if(n)n.focus()}
+  try{
+    const keep=document.activeElement&&document.activeElement.id;
+    const isC=st.me&&(st.me.role==="coach"||st.me.role==="owner");
+    const parts=!st.me?loginView():isC?(st.view==="group"?groupView():st.view==="task"?taskView():coachHome()):(st.view==="kid"?kidView():parentHome());
+    $app.replaceChildren(...parts.filter(Boolean));
+    if(keep){const n=document.getElementById(keep);if(n)n.focus()}
+  }catch(e){
+    T("draw упал: "+(e&&e.message));
+    const pre=document.createElement("pre");
+    pre.style.cssText="white-space:pre-wrap;word-break:break-word;color:#ff8a80;font:12px/1.4 monospace;padding:12px";
+    pre.textContent="Ошибка отрисовки: "+(e&&e.message)+"\n"+String(e&&e.stack||"").split("\n").slice(0,5).join("\n")+"\n\nЖурнал: "+tr.join(" | ");
+    const b=document.createElement("button");b.textContent="Выйти и начать заново";b.className="btn";
+    b.addEventListener("click",()=>{LS.del("kdl_token");location.reload()});
+    $app.replaceChildren(pre,b);
+  }
 }
 const tgInit=()=>{if(window.Telegram&&Telegram.WebApp){try{Telegram.WebApp.ready();Telegram.WebApp.expand()}catch(e){}}};
 tgInit();
