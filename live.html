@@ -84,34 +84,43 @@ const LS={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set
 const st={server:LS.get("kdl_server","http://127.0.0.1:8787"),token:LS.get("kdl_token",""),me:null,view:"home",gid:null,aid:null,err:"",busy:false,data:{}};
 const $app=document.getElementById("app");
 function onTap(n,v){let last=0,sx=0,sy=0;
-  const fire=e=>{if(n.disabled)return;const t=Date.now();if(t-last<600)return;last=t;v(e)};
+  const fire=e=>{if(n.disabled){T("кнопка "+(n.id||"?")+" отключена");return}const t=Date.now();if(t-last<600)return;last=t;T("нажата "+(n.id||n.tagName)+" ("+e.type+")");try{v(e)}catch(x){T("сбой в кнопке: "+x.message)}};
   const near=(x,y)=>Math.abs(x-sx)<12&&Math.abs(y-sy)<12;
   n.addEventListener("click",fire);
   n.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY});
   n.addEventListener("pointerup",e=>{if(near(e.clientX,e.clientY))fire(e)});
   n.addEventListener("touchstart",e=>{const q=e.touches[0];if(q){sx=q.clientX;sy=q.clientY}},{passive:true});
   n.addEventListener("touchend",e=>{const q=e.changedTouches[0];if(q&&near(q.clientX,q.clientY))fire(e)},{passive:true})}
-const ev={t:0,p:0,c:0,last:"—"};
-const evText=()=>"касаний: "+ev.t+" · нажатий мышью/пальцем: "+ev.p+" · кликов: "+ev.c+" · последнее место: "+ev.last;
+const ev={t:0,p:0,c:0,last:"—"},tr=[],T0=Date.now();
+const T=m=>{tr.push(((Date.now()-T0)/1000).toFixed(1)+"с "+m);if(tr.length>12)tr.shift();const b=document.getElementById("evlog");if(b)b.textContent=evText()};
+const evText=()=>"касаний: "+ev.t+" · нажатий: "+ev.p+" · кликов: "+ev.c+" · последнее место: "+ev.last+(tr.length?"\nЖурнал: "+tr.join(" | "):"");
 ["touchstart","pointerdown","click"].forEach(k=>document.addEventListener(k,e=>{
   if(k==="touchstart")ev.t++;else if(k==="pointerdown")ev.p++;else ev.c++;
   const t=e.target,id=t&&(t.id||t.tagName);ev.last=String(id||"?").slice(0,20);
   const box=document.getElementById("evlog");if(box)box.textContent=evText()},true));
 const el=(tag,props,...kids)=>{const n=document.createElement(tag);for(const k in props||{}){const v=props[k];if(k==="class")n.className=v;else if(k==="onclick")onTap(n,v);else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)n.setAttribute(k,v===true?"":v)}for(const c of kids.flat())if(c!=null&&c!==false)n.append(c.nodeType?c:document.createTextNode(String(c)));return n};
 let lastReq="",lastErr="";
-window.addEventListener("error",e=>{lastErr=String(e.message||e)});window.addEventListener("unhandledrejection",e=>{lastErr=String(e.reason&&e.reason.message||e.reason)});
+window.addEventListener("error",e=>{lastErr=String(e.message||e);T("JS-ошибка: "+lastErr)});window.addEventListener("unhandledrejection",e=>{lastErr=String(e.reason&&e.reason.message||e.reason);T("отказ: "+lastErr)});
 async function api(method,path,body,hdr){
-  let res;const t0=Date.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),15000);
+  T("api "+method+" "+path);let res;const t0=Date.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),15000);
   try{res=await fetch(st.server.replace(/\/+$/,"")+path,{method,signal:ctl.signal,headers:{...(st.token?{Authorization:"Bearer "+st.token}:{}),...(body!==undefined?{"Content-Type":"application/json"}:{}),...hdr},body:body!==undefined?JSON.stringify(body):undefined})}
   catch(e){clearTimeout(tm);const to=e&&e.name==="AbortError";lastReq=method+" "+path+" → "+(to?"нет ответа 15 с":"сбой сети");throw new Error(to?"Сервер не ответил за 15 секунд. Проверьте интернет и что сервер и туннель работают.":"Сервер не отвечает. Проверьте адрес и что сервер запущен.")}
-  clearTimeout(tm);lastReq=method+" "+path+" → "+res.status+" за "+(Date.now()-t0)+" мс";
+  clearTimeout(tm);lastReq=method+" "+path+" → "+res.status+" за "+(Date.now()-t0)+" мс";T("ответ "+res.status);
   let j=null;try{j=await res.json()}catch(e){}
   if(res.status===401&&st.token&&path!=="/api/auth/dev"){logout(true);throw new Error("Сессия закончилась, войдите снова.")}
   if(!res.ok)throw new Error((j&&j.error)||"Ошибка "+res.status);
   return j;
 }
 function logout(keepErr){st.token="";st.me=null;st.view="home";LS.del("kdl_token");if(!keepErr)st.err="";draw()}
-async function run(fn){if(st.busy)return;st.busy=true;st.err="";lastReq="нажато, жду ответ…";draw();try{await fn()}catch(e){st.err=e.message}st.busy=false;draw()}
+async function run(fn){
+  if(st.busy){T("пропуск: busy уже true");return}
+  st.busy=true;st.err="";lastReq="нажато, жду ответ…";T("run начат");
+  const wd=setTimeout(()=>{if(st.busy){T("сброс зависшего busy");st.busy=false;try{draw()}catch(e){}}},20000);
+  try{draw();T("перерисовано")}catch(e){T("draw упал: "+e.message)}
+  try{await fn()}catch(e){st.err=e.message;T("ошибка: "+e.message)}
+  clearTimeout(wd);st.busy=false;
+  try{draw();T("готово")}catch(e){T("draw2 упал: "+e.message)}
+}
 async function loadMe(){const j=await api("GET","/api/me");st.me=j.user;st.data.groups=j.groups||[];st.data.kids=j.athletes||[]}
 function head(sub,title,right){return el("header",null,right||null,el("small",null,sub),el("h1",null,title))}
 const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
@@ -130,7 +139,7 @@ function loginView(){
     el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
     tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
     el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
-    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 6 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px"},evText()))];
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 8 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 /* ---------- тренер ---------- */
@@ -321,5 +330,8 @@ const tgInit=()=>{if(window.Telegram&&Telegram.WebApp){try{Telegram.WebApp.ready
 tgInit();
 /* Скрипт Telegram грузится асинхронно: когда он догрузится, перерисовываем форму входа, чтобы появилась кнопка «Войти через Telegram». */
 window.__tgReady=()=>{tgInit();if(!st.me&&!st.busy)draw()};
-(async()=>{if(st.token){try{await loadMe()}catch(e){st.token="";st.err=e.message}}draw()})();
+(async()=>{if(st.token){try{await loadMe()}catch(e){st.token="";st.err=e.message}}draw();
+  /* Если страница открыта из Telegram и данные входа есть, входим сами, не дожидаясь нажатия кнопки (один раз). */
+  if(!st.me&&!st.busy&&tgInitData()){T("автовход");run(async()=>{const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})}
+})();
 </script></body></html>
