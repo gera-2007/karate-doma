@@ -76,7 +76,7 @@ input:hover,select:hover{border-color:var(--brand)}
 .xrow button:hover{background:var(--hl);border-color:var(--brand)}.xrow button:active{background:var(--brand);color:#fff}
 </style></head><body><div id="app"></div>
 <script>
-"use strict";
+(()=>{"use strict";
 /* Учебный клиент «с сервером». Данные берутся только из API (karate-doma-api); демо-приложение (index.html) не затронуто. */
 const LS={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 /* Адрес сервера можно передать в ссылке: live.html?server=https://...trycloudflare.com. Принимаются только адреса trycloudflare.com и свой компьютер, чтобы чужая ссылка не подменила сервер. */
@@ -122,7 +122,7 @@ async function run(fn){
   try{draw();T("готово")}catch(e){T("draw2 упал: "+e.message)}
 }
 async function loadMe(){const j=await api("GET","/api/me");st.me=j.user;st.data.groups=j.groups||[];st.data.kids=j.athletes||[]}
-function head(sub,title,right){return el("header",null,right||null,el("small",null,sub),el("h1",null,title))}
+function pageHead(sub,title,right){return el("header",null,right||null,el("small",null,sub),el("h1",null,title))}
 const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
 /* Данные входа Telegram: из скрипта Telegram, а если он не загрузился, из адреса страницы (#tgWebAppData=...), куда их кладёт приложение Telegram. */
 const tgInitData=()=>{try{const a=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(a)return a;return new URLSearchParams((location.hash||"").replace(/^#/,"")).get("tgWebAppData")||""}catch(e){return ""}};
@@ -132,20 +132,20 @@ function loginView(){
   const srv=el("input",{value:st.server,inputmode:"url",autocomplete:"off","aria-label":"Адрес сервера"}),name=el("input",{placeholder:"Например: Иван",maxlength:"40","aria-label":"Ваше имя",autocomplete:"off"});
   const sel=el("select",{"aria-label":"Роль"},el("option",{value:"coach"},"Я тренер"),el("option",{value:"parent"},"Я родитель"));
   const save=()=>{st.server=srv.value.trim();LS.set("kdl_server",st.server)};
-  return [head("Тестовая версия, данные учебные","Вход"),el("div",{class:"card"},
+  return [pageHead("Тестовая версия, данные учебные","Вход"),el("div",{class:"card"},
     el("label",null,"Адрес сервера"),srv,el("label",null,"Ваше имя"),name,el("label",null,"Роль (учебный вход)"),sel,
     errBox(),
     el("button",{class:"btn",id:"login",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/dev",{name:name.value,role:sel.value});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти"),
     el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
     tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
     el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
-    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 9 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 10 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 /* ---------- тренер ---------- */
 function coachHome(){
   const gs=st.data.groups||[],name=el("input",{placeholder:"Название группы, например Пн/Ср 17:00",maxlength:"40","aria-label":"Название группы"});
-  return [head("Тренер: "+st.me.name,"Мои группы",exit()),
+  return [pageHead("Тренер: "+st.me.name,"Мои группы",exit()),
     ...gs.map(g=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,g.name),el("span",{class:"mut"},g.athletes+" уч.")),el("button",{class:"btn s",onclick:()=>run(async()=>{st.gid=g.id;st.view="group";st.gtab="students";st.moreDays=false;await loadGroup()})},"Открыть"))),
     gs.length?null:el("p",{class:"mut"},"Групп пока нет. Создайте первую."),
     (()=>{const tg=el("input",{id:"tgname",value:st.me.tgUsername||"",placeholder:"@ваш_telegram",maxlength:"33",autocapitalize:"off",autocomplete:"off","aria-label":"Ваше имя в Telegram"});
@@ -196,7 +196,7 @@ function groupView(){
       el("ul",{class:"who","aria-label":"Кто выполнил"},(st.data.athletes||[]).map(a=>{const d=(t.doneBy||[]).includes(a.id);return el("li",{class:d?"ok":"mut"},(d?"✓ ":"○ ")+a.name)})))),
     (st.data.tasks||[]).length?null:el("p",{class:"mut"},"Заданий пока нет."),
     el("button",{class:"btn",id:"newtask",onclick:()=>{st.view="task";draw()}},"Новое задание")];
-  return [head("Группа",g.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,...body];
+  return [pageHead("Группа",g.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,...body];
 }
 const fmtDay=d=>d.slice(8)+"."+d.slice(5,7);
 const WD=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
@@ -254,7 +254,7 @@ function taskView(){
     const m=el("select",{class:"xm","aria-label":"Минуты"},Array.from({length:60},(_,i)=>el("option",{value:i+1,selected:i+1===5},(i+1)+" мин")));
     const d=el("button",{type:"button","aria-label":"Убрать упражнение",onclick:()=>{if(rows.children.length>1)r.remove()}},"×");const r=el("div",{class:"xrow"},n,m,d);rows.append(r)};
   addRow();
-  return [head("Новое задание","Что делать ученикам",el("button",{onclick:()=>{st.view="group";draw()}},"Назад")),
+  return [pageHead("Новое задание","Что делать ученикам",el("button",{onclick:()=>{st.view="group";draw()}},"Назад")),
     el("div",{class:"card"},el("label",null,"Название"),title,el("label",null,"Комментарий"),note,el("label",{class:"chk"},nv,"Нужно видео от ученика (отправит вам в Telegram)"),el("label",null,"Упражнения и время"),rows,
       el("button",{class:"btn s",id:"addrow",type:"button",onclick:addRow},"Добавить упражнение"),errBox(),
       el("button",{class:"btn",id:"publish",disabled:st.busy,onclick:()=>run(async()=>{
@@ -264,7 +264,7 @@ function taskView(){
 /* ---------- родитель ---------- */
 function parentHome(){
   const kids=st.data.kids||[],code=el("input",{placeholder:"Код от тренера",maxlength:"12",autocapitalize:"characters",autocomplete:"off","aria-label":"Код от тренера"});
-  return [head("Родитель: "+st.me.name,"Мои дети",exit()),
+  return [pageHead("Родитель: "+st.me.name,"Мои дети",exit()),
     ...kids.map(k=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,k.name),el("span",{class:"mut"},k.groupName)),el("div",{style:"margin:6px 0 0"},beltEl(k.belt)),el("button",{class:"btn s",onclick:()=>run(async()=>{st.aid=k.id;st.view="kid";st.ktab="tasks";st.kmore=false;await loadKid()})},"Открыть"))),
     kids.length?null:el("p",{class:"mut"},"Пока никого не привязано. Введите код от тренера."),
     el("div",{class:"card"},el("b",null,"Привязать ребёнка"),code,
@@ -317,7 +317,7 @@ function kidView(){
       t.video?kidVideo(t,k):null,
       t.status==="done"?null:el("button",{class:"btn done",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/tasks/${t.id}/done`,{athleteId:st.aid});await loadKid()})},"Сделано"))),
     (st.data.mine||[]).length?null:el("p",{class:"mut"},"Заданий пока нет.")];
-  return [head("Ребёнок",k.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,errBox(),...body];
+  return [pageHead("Ребёнок",k.name,el("button",{onclick:()=>run(async()=>{st.view="home";await loadMe()})},"Назад")),tabs,errBox(),...body];
 }
 function draw(){
   try{
@@ -343,5 +343,6 @@ window.__tgReady=()=>{tgInit();if(!st.me&&!st.busy)draw()};
 (async()=>{if(st.token){try{await loadMe()}catch(e){st.token="";st.err=e.message}}draw();
   /* Если страница открыта из Telegram и данные входа есть, входим сами, не дожидаясь нажатия кнопки (один раз). */
   if(!st.me&&!st.busy&&tgInitData()){T("автовход");run(async()=>{const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})}
+})();
 })();
 </script></body></html>
