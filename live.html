@@ -18,6 +18,7 @@ h2{font-size:18px;margin:14px 0 6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 8px}
 .mut{color:var(--mut);font-size:14px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+button,select,.btn{touch-action:manipulation}
 .btn{display:block;width:100%;min-height:44px;border:0;border-radius:12px;background:var(--brand);color:var(--on-brand);font:700 16px system-ui,sans-serif;padding:8px 12px;margin:8px 0 0;cursor:pointer}
 .btn.s{background:transparent;color:var(--ink);border:1px solid var(--bd)}
 .btn:disabled{opacity:.5}
@@ -82,7 +83,21 @@ const LS={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set
 (()=>{try{const q=new URLSearchParams(location.search).get("server");if(!q)return;const u=new URL(q);const ok=(u.protocol==="https:"&&/^[a-z0-9-]+(\.[a-z0-9-]+)*\.trycloudflare\.com$/.test(u.hostname))||(u.protocol==="http:"&&(u.hostname==="127.0.0.1"||u.hostname==="localhost"));if(!ok)return;if(LS.get("kdl_server","")!==u.origin){LS.set("kdl_server",u.origin);LS.del("kdl_token")}}catch(e){}})();
 const st={server:LS.get("kdl_server","http://127.0.0.1:8787"),token:LS.get("kdl_token",""),me:null,view:"home",gid:null,aid:null,err:"",busy:false,data:{}};
 const $app=document.getElementById("app");
-const el=(tag,props,...kids)=>{const n=document.createElement(tag);for(const k in props||{}){const v=props[k];if(k==="class")n.className=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)n.setAttribute(k,v===true?"":v)}for(const c of kids.flat())if(c!=null&&c!==false)n.append(c.nodeType?c:document.createTextNode(String(c)));return n};
+function onTap(n,v){let last=0,sx=0,sy=0;
+  const fire=e=>{if(n.disabled)return;const t=Date.now();if(t-last<600)return;last=t;v(e)};
+  const near=(x,y)=>Math.abs(x-sx)<12&&Math.abs(y-sy)<12;
+  n.addEventListener("click",fire);
+  n.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY});
+  n.addEventListener("pointerup",e=>{if(near(e.clientX,e.clientY))fire(e)});
+  n.addEventListener("touchstart",e=>{const q=e.touches[0];if(q){sx=q.clientX;sy=q.clientY}},{passive:true});
+  n.addEventListener("touchend",e=>{const q=e.changedTouches[0];if(q&&near(q.clientX,q.clientY))fire(e)},{passive:true})}
+const ev={t:0,p:0,c:0,last:"—"};
+const evText=()=>"касаний: "+ev.t+" · нажатий мышью/пальцем: "+ev.p+" · кликов: "+ev.c+" · последнее место: "+ev.last;
+["touchstart","pointerdown","click"].forEach(k=>document.addEventListener(k,e=>{
+  if(k==="touchstart")ev.t++;else if(k==="pointerdown")ev.p++;else ev.c++;
+  const t=e.target,id=t&&(t.id||t.tagName);ev.last=String(id||"?").slice(0,20);
+  const box=document.getElementById("evlog");if(box)box.textContent=evText()},true));
+const el=(tag,props,...kids)=>{const n=document.createElement(tag);for(const k in props||{}){const v=props[k];if(k==="class")n.className=v;else if(k==="onclick")onTap(n,v);else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)n.setAttribute(k,v===true?"":v)}for(const c of kids.flat())if(c!=null&&c!==false)n.append(c.nodeType?c:document.createTextNode(String(c)));return n};
 let lastReq="",lastErr="";
 window.addEventListener("error",e=>{lastErr=String(e.message||e)});window.addEventListener("unhandledrejection",e=>{lastErr=String(e.reason&&e.reason.message||e.reason)});
 async function api(method,path,body,hdr){
@@ -115,7 +130,7 @@ function loginView(){
     el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
     tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
     el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
-    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 5 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")))];
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 6 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px"},evText()))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 /* ---------- тренер ---------- */
