@@ -81,6 +81,10 @@ input:hover,select:hover{border-color:var(--brand)}
 const LS={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 /* Адрес сервера можно передать в ссылке: live.html?server=https://...trycloudflare.com. Принимаются только адреса trycloudflare.com и свой компьютер, чтобы чужая ссылка не подменила сервер. */
 (()=>{try{const q=new URLSearchParams(location.search).get("server");if(!q)return;const u=new URL(q);const ok=(u.protocol==="https:"&&/^[a-z0-9-]+(\.[a-z0-9-]+)*\.trycloudflare\.com$/.test(u.hostname))||(u.protocol==="http:"&&(u.hostname==="127.0.0.1"||u.hostname==="localhost"));if(!ok)return;if(LS.get("kdl_server","")!==u.origin){LS.set("kdl_server",u.origin);LS.del("kdl_token")}}catch(e){}})();
+const BOT="karate_doma_test_bot";
+const inviteLink=c=>"https://t.me/"+BOT+"?startapp="+c;
+const inviteText=(n,c)=>"Здравствуйте! Привязать ребёнка ("+n+") в приложении «Карате дома»: откройте ссылку и подтвердите согласие. Если ссылка не открылась, откройте бота @"+BOT+" и введите код "+c+".";
+const startParam=()=>{try{const h=new URLSearchParams((location.hash||"").replace(/^#/,"")).get("tgWebAppStartParam");const u=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.start_param;const v=String(h||u||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,12);return v.length>=4?v:""}catch(e){return ""}};
 const st={server:LS.get("kdl_server","http://127.0.0.1:8787"),token:LS.get("kdl_token",""),me:null,view:"home",gid:null,aid:null,err:"",busy:false,data:{}};
 const $app=document.getElementById("app");
 function onTap(n,v){let last=0,sx=0,sy=0;
@@ -128,18 +132,20 @@ const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
 const tgInitData=()=>{try{const a=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(a)return a;return new URLSearchParams((location.hash||"").replace(/^#/,"")).get("tgWebAppData")||""}catch(e){return ""}};
 function loginView(){
   const tg=tgInitData();
+  let dev=false;try{dev=/[?&]dev=1/.test(location.search)||/^(127\.0\.0\.1|localhost)$/.test(new URL(st.server).hostname)}catch(e){}
+  const demo=!tg&&dev;
   let role="coach";
   const srv=el("input",{value:st.server,inputmode:"url",autocomplete:"off","aria-label":"Адрес сервера"}),name=el("input",{placeholder:"Например: Иван",maxlength:"40","aria-label":"Ваше имя",autocomplete:"off"});
   const sel=el("select",{"aria-label":"Роль"},el("option",{value:"coach"},"Я тренер"),el("option",{value:"parent"},"Я родитель"));
   const save=()=>{st.server=srv.value.trim();LS.set("kdl_server",st.server)};
   return [pageHead("Тестовая версия, данные учебные","Вход"),el("div",{class:"card"},
-    ...(tg?[el("p",{class:"mut"},st.busy?"Входим через Telegram…":"Вход через Telegram.")]:[el("label",null,"Адрес сервера"),srv,el("label",null,"Ваше имя"),name,el("label",null,"Роль (учебный вход)"),sel]),
+    ...(tg?[el("p",{class:"mut"},st.busy?"Входим через Telegram…":"Вход через Telegram.")]:demo?[el("label",null,"Адрес сервера"),srv,el("label",null,"Ваше имя"),name,el("label",null,"Роль (учебный вход)"),sel]:[el("p",{class:"mut"},"Это приложение работает внутри Telegram. Откройте бота и нажмите кнопку «Карате дома» внизу слева."),el("a",{class:"btn",id:"openbot",href:"https://t.me/"+BOT,style:"text-align:center;text-decoration:none"},"Открыть бота в Telegram")]),
     errBox(),
-    tg?null:el("button",{class:"btn",id:"login",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/dev",{name:name.value,role:sel.value});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти"),
-    tg?null:el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
+    !demo?null:el("button",{class:"btn",id:"login",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/dev",{name:name.value,role:sel.value});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти"),
+    !demo?null:el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
     tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
-    tg?null:el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
-    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 12 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
+    !demo?null:el("p",{class:"mut"},"Учебный вход работает, только если на сервере включён DEMO_AUTH. В настоящей версии вход будет через Telegram."),
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 13 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 /* ---------- тренер ---------- */
@@ -159,6 +165,7 @@ const beltEl=i=>{const b=BELTS[Math.min(Math.max(i|0,0),BELTS.length-1)];return 
 const reqEl=(i,brief)=>{const r=BELT_REQ[i];if(!r)return null;const rows=brief?r.filter(([h])=>h==="Ката"||h==="Кумитэ"):r;return el("div",{class:"rq"},rows.map(([h,it])=>el("div",{class:"rs"},el("div",{class:"rh"},h),el("ul",null,it.map(x=>el("li",null,x))))))};
 const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 async function loadAtt(day){const j=await api("GET",`/api/groups/${st.gid}/attendance?date=${day}`);st.data.att={date:day,rows:j.athletes.map(a=>({id:a.id,name:a.name,present:a.present===null?null:a.present===1}))}}
+async function loadAthletes(){const a=await api("GET",`/api/groups/${st.gid}/athletes`);st.data.athletes=a.athletes}
 async function loadGroup(){const [a,t,sc,h]=await Promise.all([api("GET",`/api/groups/${st.gid}/athletes`),api("GET",`/api/tasks?groupId=${st.gid}`),api("GET",`/api/groups/${st.gid}/schedule`),api("GET",`/api/groups/${st.gid}/attendance/days`)]);st.data.athletes=a.athletes;st.data.tasks=t.tasks;st.data.code=null;st.data.sched=sc;st.data.hist=h.days;const d=trainingDays();const keep=st.data.att&&d.includes(st.data.att.date)?st.data.att.date:d[0];await pickDay(keep)}
 function copyText(t){
   const msg=m=>{const e=document.getElementById("copymsg");if(e)e.textContent=m};
@@ -185,15 +192,15 @@ function groupView(){
     ...(st.data.athletes||[]).map(a=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,a.name),el("span",{class:"pill"+(a.linked?" done":"")},a.linked?"привязан":"не привязан")),
       el("div",{style:"margin:6px 0 0"},beltEl(a.belt)),
       el("button",{class:"btn s",onclick:()=>run(async()=>{const j=await api("POST",`/api/athletes/${a.id}/invite`,{kind:"parent"});st.data.code={id:a.id,code:j.code,name:a.name}})},"Код для родителя"),
-      st.data.code&&st.data.code.id===a.id?el("div",null,el("div",{class:"code",id:"code",style:"-webkit-user-select:text;user-select:text"},st.data.code.code),el("div",{class:"two"},el("button",{class:"btn s",type:"button",id:"copycode",onclick:()=>copyText(st.data.code.code)},"Копировать"),navigator.share?el("button",{class:"btn s",type:"button",id:"sharecode",onclick:()=>shareText("Код для привязки в приложении «Карате дома»: "+st.data.code.code)},"Отправить"):null),el("p",{class:"mut",id:"copymsg"},"Отправьте код родителю. Он одноразовый и действует 7 дней.")):null)),
+      st.data.code&&st.data.code.id===a.id?el("div",null,el("div",{class:"code",id:"code",style:"-webkit-user-select:text;user-select:text"},st.data.code.code),el("div",{class:"two"},el("button",{class:"btn s",type:"button",id:"copycode",onclick:()=>copyText(st.data.code.code)},"Копировать код"),el("button",{class:"btn s",type:"button",id:"copylink",onclick:()=>copyText(inviteLink(st.data.code.code))},"Копировать ссылку")),el("a",{class:"btn",id:"sendcode",target:"_blank",rel:"noopener",style:"text-align:center;text-decoration:none",href:"https://t.me/share/url?url="+encodeURIComponent(inviteLink(st.data.code.code))+"&text="+encodeURIComponent(inviteText(st.data.name,st.data.code.code))},"Отправить родителю в Telegram"),el("p",{class:"mut",id:"copymsg"},"Родитель откроет ссылку в Telegram, и код подставится сам. Код одноразовый, действует 7 дней.")):null)),
     el("div",{class:"card"},nm,errBox(),el("button",{class:"btn",id:"addath",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/groups/${st.gid}/athletes`,{name:nm.value});await loadGroup()})},"Добавить ученика"))];
   else if(tab==="att")body=[attCard(),schedCard()];
   else if(tab==="belts")body=[
     ...(st.data.athletes||[]).map(a=>{const nx=BELTS[a.belt+1];return el("div",{class:"card belt-card"},el("b",null,a.name),el("div",{style:"margin:6px 0"},beltEl(a.belt)),
-      nx?el("button",{class:"btn promote",type:"button",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/athletes/${a.id}/belt`,{belt:a.belt+1});await loadGroup()})},"Повысить до "+nx.n.split(" · ")[0]):el("p",{class:"mut",style:"margin:6px 0 0"},"Высшая ступень в приложении"),
+      nx?el("button",{class:"btn promote",type:"button",disabled:st.busy,onclick:()=>run(async()=>{await api("POST",`/api/athletes/${a.id}/belt`,{belt:a.belt+1});await loadAthletes()})},"Повысить до "+nx.n.split(" · ")[0]):el("p",{class:"mut",style:"margin:6px 0 0"},"Высшая ступень в приложении"),
       el("details",null,el("summary",null,"Другой пояс и критерии"),
         el("label",null,"Назначить пояс"),
-        el("select",{"aria-label":"Пояс "+a.name,class:"beltsel",onchange:e=>run(async()=>{await api("POST",`/api/athletes/${a.id}/belt`,{belt:Number(e.target.value)});await loadGroup()})},BELTS.map((b,i)=>el("option",{value:i,selected:i===a.belt},b.n))),
+        el("select",{"aria-label":"Пояс "+a.name,class:"beltsel",onchange:e=>run(async()=>{await api("POST",`/api/athletes/${a.id}/belt`,{belt:Number(e.target.value)});await loadAthletes()})},BELTS.map((b,i)=>el("option",{value:i,selected:i===a.belt},b.n))),
         nx?el("div",null,el("p",{class:"mut",style:"margin:10px 0 0"},"Критерии следующего пояса:"),reqEl(a.belt+1)):null))}),
     (st.data.athletes||[]).length?el("p",{class:"mut"},"Пояс и аттестацию определяет тренер. Критерии — ориентир."):el("p",{class:"mut"},"Сначала добавьте учеников.")];
   else body=[
@@ -269,13 +276,13 @@ function taskView(){
 }
 /* ---------- родитель ---------- */
 function parentHome(){
-  const kids=st.data.kids||[],code=el("input",{placeholder:"Код от тренера",maxlength:"12",autocapitalize:"characters",autocomplete:"off","aria-label":"Код от тренера"});
+  const kids=st.data.kids||[],code=el("input",{placeholder:"Код от тренера",maxlength:"12",autocapitalize:"characters",autocomplete:"off","aria-label":"Код от тренера",value:st.code||startParam(),oninput:e=>{const v=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");st.code=v;if(e.target.value!==v)e.target.value=v}});
   return [pageHead("Родитель: "+st.me.name,"Мои дети",exit()),
     ...kids.map(k=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,k.name),el("span",{class:"mut"},k.groupName)),el("div",{style:"margin:6px 0 0"},beltEl(k.belt)),el("button",{class:"btn s",onclick:()=>run(async()=>{st.aid=k.id;st.view="kid";st.ktab="tasks";st.kmore=false;await loadKid()})},"Открыть"))),
-    kids.length?null:el("p",{class:"mut"},"Пока никого не привязано. Введите код от тренера."),
+    kids.length?null:el("div",{class:"card"},el("b",null,"Добро пожаловать!"),el("p",{class:"mut",style:"margin:6px 0 0"},"1. Введите код, который прислал тренер. Если вы открыли ссылку от тренера, код уже подставлен.  2. Поставьте галочку согласия.  3. Нажмите «Привязать».")),
     el("div",{class:"card"},el("b",null,"Привязать ребёнка"),code,
       el("label",{class:"chk consent"},el("input",{type:"checkbox",id:"consent",checked:!!st.consent,onchange:e=>{st.consent=e.target.checked;document.getElementById("link").disabled=!st.consent||st.busy}}),"Я родитель или законный представитель ребёнка и согласен(на), что тренер видит в приложении имя ребёнка, пояс, посещаемость и выполнение заданий. Видео отправляется тренеру в Telegram и в приложении не хранится."),
-      errBox(),el("button",{class:"btn",id:"link",disabled:!st.consent||st.busy,onclick:()=>run(async()=>{await api("POST","/api/link",{code:code.value,consent:!!st.consent});await loadMe()})},"Привязать"))];
+      errBox(),el("button",{class:"btn",id:"link",disabled:!st.consent||st.busy,onclick:()=>run(async()=>{await api("POST","/api/link",{code:code.value,consent:!!st.consent});st.code="";await loadMe()})},"Привязать"))];
 }
 async function loadKid(){const [j,at]=await Promise.all([api("GET",`/api/my/tasks?athleteId=${st.aid}`),api("GET",`/api/my/attendance?athleteId=${st.aid}`)]);st.data.mine=j.tasks;st.data.kidAtt=at;st.data.kidBelt=j.athlete.belt}
 function kidVideo(t,k){
