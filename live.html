@@ -125,13 +125,13 @@ async function run(fn){
   clearTimeout(wd);st.busy=false;
   try{draw();T("готово")}catch(e){T("draw2 упал: "+e.message)}
 }
-async function loadMe(){const j=await api("GET","/api/me");st.me=j.user;st.data.groups=j.groups||[];st.data.kids=j.athletes||[];st.data.startCode=j.startCode||""}
+async function loadMe(){const j=await api("GET","/api/me");st.me=j.user;st.data.groups=j.groups||[];st.data.kids=j.athletes||[];st.data.startCode=j.startCode||"";st.data.reqs=[];if(j.user.isAdmin&&j.user.role==="coach"){try{st.data.reqs=(await api("GET","/api/admin/coach-requests")).requests}catch(e){}}}
 function pageHead(sub,title,right){return el("header",null,right||null,el("small",null,sub),el("h1",null,title))}
 const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
 const okBox=()=>st.ok?el("p",{class:"ok",role:"status",id:"okmsg"},st.ok):null;
 /* Данные входа Telegram: из скрипта Telegram, а если он не загрузился, из адреса страницы (#tgWebAppData=...), куда их кладёт приложение Telegram. */
 const tgInitData=()=>{try{const a=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(a)return a;return new URLSearchParams((location.hash||"").replace(/^#/,"")).get("tgWebAppData")||""}catch(e){return ""}};
-const diagLine=(tg)=>el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 17 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:""));
+const diagLine=(tg)=>el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 18 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:""));
 const goScr=(x)=>{st.scr=x;st.err="";st.rstep=1;draw()};
 const backBtn=(to)=>el("button",{id:"authback",type:"button",onclick:()=>to?to():goScr("welcome")},"Назад");
 const tgLogin=async()=>{const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()};
@@ -148,19 +148,23 @@ function registerView(){
     return [pageHead("Шаг 2 из 2","Код из Telegram",backBtn(()=>{st.rstep=1;st.err="";draw()})),el("div",{class:"card",id:"regcard"},
       el("p",{class:"mut",style:"margin:0 0 8px"},"Бот прислал вам код в Telegram. Введите его здесь. Код действует 10 минут."),
       el("label",null,"Код"),code,errBox(),
-      el("button",{class:"btn",id:"regconfirm",disabled:st.busy,onclick:()=>run(async()=>{await setSession(await api("POST","/api/auth/register/confirm",{code:code.value},H));st.rphone="";st.rconsent=false;st.scr="welcome";st.rstep=1})},"Подтвердить"),
+      el("button",{class:"btn",id:"regconfirm",disabled:st.busy,onclick:()=>run(async()=>{await setSession(await api("POST","/api/auth/register/confirm",{code:code.value},H));st.rphone="";st.rconsent=false;st.rrole="parent";st.scr="welcome";st.rstep=1})},"Подтвердить"),
       el("button",{class:"btn s",id:"regagain",type:"button",style:"font-size:13px",disabled:st.busy,onclick:()=>{st.rstep=1;st.err="";draw()}},"Отправить код ещё раз")),diagLine(tg)];
   }
   const ph=el("input",{id:"regphone",type:"tel",inputmode:"tel",value:st.rphone||"",placeholder:"+7 999 123-45-67",maxlength:"20",autocomplete:"tel","aria-label":"Номер телефона",oninput:e=>{st.rphone=e.target.value}});
   const pw=el("input",{id:"regpw",type:"password",placeholder:"Не короче 8 символов",maxlength:"72",autocomplete:"new-password","aria-label":"Пароль"});
   const pw2=el("input",{id:"regpw2",type:"password",placeholder:"Повторите пароль",maxlength:"72",autocomplete:"new-password","aria-label":"Повторите пароль"});
+  const role=st.rrole==="coach"?"coach":"parent";
+  const pick=(r,t,id)=>el("button",{type:"button",id,class:"btn "+(role===r?"":"s"),style:"flex:1;min-height:40px;font-size:14px","aria-pressed":role===r?"true":"false",onclick:()=>{st.rrole=r;st.err="";draw()}},t);
   return [pageHead("Шаг 1 из 2","Регистрация",backBtn()),el("div",{class:"card",id:"regcard"},
+    el("label",null,"Кто вы?"),el("div",{style:"display:flex;gap:8px"},pick("parent","Родитель или ученик","rolep"),pick("coach","Тренер","rolec")),
+    el("p",{class:"mut",id:"rolehint",style:"font-size:12px;margin:6px 0 0"},role==="coach"?"Права тренера выдаёт владелец приложения после проверки. До этого вы будете видеть экран родителя.":"Ребёнка к вашему аккаунту привяжет код, который выдаст тренер."),
     el("label",null,"Номер телефона (это ваш логин)"),ph,el("label",null,"Придумайте пароль"),pw,el("label",null,"Повторите пароль"),pw2,
     el("label",{class:"chk consent"},el("input",{type:"checkbox",id:"regconsent",checked:!!st.rconsent,onchange:e=>{st.rconsent=e.target.checked}}),"Я согласен(на) на обработку моего номера телефона для входа в приложение."),
     errBox(),
     el("button",{class:"btn",id:"regsend",disabled:st.busy,onclick:()=>run(async()=>{
       if(pw.value!==pw2.value)throw new Error("Пароли не совпадают");
-      await api("POST","/api/auth/register/start",{phone:ph.value,password:pw.value,consent:!!st.rconsent},H);st.rstep=2})},"Получить код в Telegram")),diagLine(tg)];
+      await api("POST","/api/auth/register/start",{phone:ph.value,password:pw.value,consent:!!st.rconsent,role},H);st.rstep=2})},"Получить код в Telegram")),diagLine(tg)];
 }
 function loginView(){
   const tg=tgInitData();
@@ -204,7 +208,14 @@ function credCard(){
 /* ---------- тренер ---------- */
 function coachHome(){
   const gs=st.data.groups||[],name=el("input",{placeholder:"Название группы, например Пн/Ср 17:00",maxlength:"40","aria-label":"Название группы"});
+  const reqs=st.data.reqs||[];
   return [pageHead("Тренер: "+st.me.name,"Мои группы",exit()),
+    reqs.length?el("div",{class:"card",id:"reqcard"},el("b",null,"Заявки на тренера"),
+      ...reqs.map(r=>el("div",{style:"margin-top:10px"},el("div",null,el("b",null,r.name||"Без имени")),el("div",{class:"mut",style:"font-size:13px"},"Телефон: +"+r.login+(r.tg_username?" · @"+r.tg_username:"")),
+        el("div",{style:"display:flex;gap:8px;margin-top:6px"},
+          el("button",{class:"btn",id:"approve-"+r.id,style:"flex:1;min-height:38px",disabled:st.busy,onclick:()=>run(async()=>{await api("POST","/api/admin/coach-requests/"+r.id+"/approve");await loadMe()})},"Одобрить"),
+          el("button",{class:"btn s",id:"reject-"+r.id,style:"flex:1;min-height:38px",disabled:st.busy,onclick:()=>run(async()=>{await api("POST","/api/admin/coach-requests/"+r.id+"/reject");await loadMe()})},"Отклонить")))),
+      el("p",{class:"mut",style:"font-size:12px;margin:8px 0 0"},"Одобряйте только тех, кого знаете: тренер видит имена детей и телефоны родителей своих групп.")):null,
     ...gs.map(g=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,g.name),el("span",{class:"mut"},g.athletes+" уч.")),el("button",{class:"btn s",onclick:()=>run(async()=>{st.gid=g.id;st.view="group";st.gtab="students";st.moreDays=false;await loadGroup()})},"Открыть"))),
     gs.length?null:el("p",{class:"mut"},"Групп пока нет. Создайте первую."),
     (()=>{const tg=el("input",{id:"tgname",value:st.me.tgUsername||"",placeholder:"@ваш_telegram",maxlength:"33",autocapitalize:"off",autocomplete:"off","aria-label":"Ваше имя в Telegram"});
@@ -342,6 +353,7 @@ function taskView(){
 function parentHome(){
   const kids=st.data.kids||[],code=el("input",{placeholder:"Код от тренера",maxlength:"12",autocapitalize:"characters",autocomplete:"off","aria-label":"Код от тренера",value:st.code||st.data.startCode||startParam(),oninput:e=>{const v=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");st.code=v;if(e.target.value!==v)e.target.value=v}});
   return [pageHead("Родитель: "+st.me.name,"Мои дети",exit()),
+    st.me.coachRequest?el("div",{class:"card",id:"coachwait"},el("b",null,"Заявка тренера отправлена"),el("p",{class:"mut",style:"margin:6px 0 0"},"Владелец приложения проверит её и откроет вам кабинет тренера. Пока можно пользоваться как родитель.")):null,
     ...kids.map(k=>el("div",{class:"card"},el("div",{class:"row"},el("b",null,k.name),el("span",{class:"mut"},k.groupName)),el("div",{style:"margin:6px 0 0"},beltEl(k.belt)),el("button",{class:"btn s",onclick:()=>run(async()=>{st.aid=k.id;st.view="kid";st.ktab="tasks";st.kmore=false;await loadKid()})},"Открыть"))),
     kids.length?null:el("div",{class:"card"},el("b",null,"Добро пожаловать!"),el("p",{class:"mut",style:"margin:6px 0 0"},"1. Введите код, который прислал тренер (если вы вошли по логину или по ссылке от тренера, код уже подставлен).  2. Поставьте галочку согласия.  3. Нажмите «Привязать».")),
     el("div",{class:"card"},el("b",null,"Привязать ребёнка"),code,
