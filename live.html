@@ -13,7 +13,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-ap
 #app{max-width:480px;margin:0 auto;padding:0 12px 32px;min-height:100vh}
 header{background:var(--hdr);color:#fff;margin:0 -12px 10px;padding:10px 12px 12px;display:flow-root}
 header small{opacity:.75;display:block}header h1{margin:0;font-size:21px;font-weight:800}
-header button{float:right;min-height:44px;min-width:44px;border:1px solid #ffffffa6;background:transparent;color:#fff;border-radius:10px;font:inherit;padding:0 12px}
+header button{float:right;position:relative;z-index:2;min-height:44px;min-width:44px;border:1px solid #ffffffa6;background:transparent;color:#fff;border-radius:10px;font:inherit;padding:0 12px}
 h2{font-size:18px;margin:14px 0 6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 8px}
 .mut{color:var(--mut);font-size:14px}
@@ -131,6 +131,15 @@ const errBox=()=>st.err?el("p",{class:"err",role:"alert"},st.err):null;
 const okBox=()=>st.ok?el("p",{class:"ok",role:"status",id:"okmsg"},st.ok):null;
 /* Данные входа Telegram: из скрипта Telegram, а если он не загрузился, из адреса страницы (#tgWebAppData=...), куда их кладёт приложение Telegram. */
 const tgInitData=()=>{try{const a=window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData;if(a)return a;return new URLSearchParams((location.hash||"").replace(/^#/,"")).get("tgWebAppData")||""}catch(e){return ""}};
+function registerView(){
+  return [pageHead("Новый пользователь","Регистрация",el("button",{id:"regback",type:"button",onclick:()=>{st.reg=false;draw()}},"Назад")),
+    el("div",{class:"card",id:"regcard"},el("b",null,"Как зарегистрироваться"),
+      el("p",{class:"mut",style:"margin:6px 0 0"},"Регистрация идёт через Telegram: телефон и пароль придумывать не нужно."),
+      el("p",{class:"mut",style:"margin:6px 0 0"},"1. Нажмите «Открыть бота» и в боте нажмите «Запустить» (Start)."),
+      el("p",{class:"mut",style:"margin:6px 0 0"},"2. Нажмите кнопку «Карате дома» внизу слева. Вы зарегистрированы."),
+      el("p",{class:"mut",style:"margin:6px 0 0"},"3. Если хотите входить и без Telegram, задайте логин и пароль в карточке «Вход без Telegram»."),
+      el("a",{class:"btn",id:"regbot",href:"https://t.me/"+BOT,style:"text-align:center;text-decoration:none"},"Открыть бота"))];
+}
 function loginView(){
   const tg=tgInitData();
   let dev=false;try{dev=/[?&]dev=1/.test(location.search)||/^(127\.0\.0\.1|localhost)$/.test(new URL(st.server).hostname)}catch(e){}
@@ -140,7 +149,8 @@ function loginView(){
   const sel=el("select",{"aria-label":"Роль"},el("option",{value:"coach"},"Я тренер"),el("option",{value:"parent"},"Я родитель"));
   const save=()=>{st.server=srv.value.trim();LS.set("kdl_server",st.server)};
   const lgn=el("input",{id:"lgn",value:st.lgn||"",placeholder:"Логин",maxlength:"40",autocapitalize:"off",autocorrect:"off",autocomplete:"username","aria-label":"Логин",oninput:e=>{st.lgn=e.target.value}}),pwd=el("input",{id:"pwd",type:"password",placeholder:"Пароль",maxlength:"100",autocomplete:"current-password","aria-label":"Пароль"});
-  return [pageHead("Тестовая версия, данные учебные","Вход"),el("div",{class:"card"},
+  if(st.reg)return registerView();
+  return [pageHead("Тестовая версия, данные учебные","Вход",el("button",{id:"register",type:"button",style:"font-size:13px;min-height:36px;min-width:0;padding:0 10px",onclick:()=>{st.reg=true;st.err="";draw()}},"Регистрация")),el("div",{class:"card"},
     ...(tg&&st.busy?[el("p",{class:"mut"},"Входим через Telegram…")]:[]),
     ...(demo?[el("label",null,"Адрес сервера"),srv,el("label",null,"Ваше имя"),name,el("label",null,"Роль (учебный вход)"),sel]:[]),
     el("b",null,"Войти по логину и паролю"),
@@ -148,12 +158,10 @@ function loginView(){
     errBox(),
     el("button",{class:"btn",id:"pwlogin",disabled:st.busy,onclick:()=>run(async()=>{const j=await api("POST","/api/auth/login",{login:lgn.value,password:pwd.value});st.token=j.token;LS.set("kdl_token",j.token);st.lgn="";await loadMe()})},"Войти"),
     tg?el("button",{class:"btn s",id:"tglogin",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/telegram",undefined,{Authorization:"tma "+tgInitData()});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Войти через Telegram"):null,
-    el("button",{class:"btn s",id:"register",type:"button",onclick:()=>{st.reg=!st.reg;draw()}},st.reg?"Скрыть":"Зарегистрироваться"),
-    st.reg?el("div",{class:"card",id:"regcard"},el("b",null,"Регистрация"),el("p",{class:"mut",style:"margin:6px 0 0"},"Регистрация идёт через Telegram: телефон и пароль придумывать не нужно."),el("p",{class:"mut",style:"margin:6px 0 0"},"1. Нажмите «Открыть бота» и в боте нажмите «Запустить» (Start)."),el("p",{class:"mut",style:"margin:6px 0 0"},"2. Нажмите кнопку «Карате дома» внизу слева. Вы зарегистрированы."),el("p",{class:"mut",style:"margin:6px 0 0"},"3. Если хотите входить и без Telegram, задайте логин и пароль в карточке «Вход без Telegram»."),el("a",{class:"btn",id:"regbot",href:"https://t.me/"+BOT,style:"text-align:center;text-decoration:none"},"Открыть бота")):null,
     !tg&&!demo?el("a",{class:"btn s",id:"openbot",href:"https://t.me/"+BOT,style:"text-align:center;text-decoration:none"},"Открыть бота в Telegram"):null,
     !demo?null:el("button",{class:"btn",id:"login",disabled:st.busy,onclick:()=>run(async()=>{save();const j=await api("POST","/api/auth/dev",{name:name.value,role:sel.value});st.token=j.token;LS.set("kdl_token",j.token);await loadMe()})},"Учебный вход"),
     !demo?null:el("button",{class:"btn s",id:"ping",disabled:st.busy,onclick:()=>run(async()=>{save();await api("GET","/api/health")})},"Проверить связь с сервером"),
-    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 15 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
+    el("p",{class:"mut",style:"font-size:12px"},"Версия страницы 16 · скрипт Telegram: "+(window.Telegram?"загружен":"нет")+" · данные входа: "+(tg?"есть":"нет")+" · последний запрос: "+(lastReq||"не было")+(lastErr?" · ошибка скрипта: "+lastErr:"")),el("p",{class:"mut",id:"evlog",style:"font-size:12px;white-space:pre-wrap;word-break:break-word"},evText()))];
 }
 const exit=()=>el("button",{onclick:()=>logout()},"Выйти");
 function credCard(){
